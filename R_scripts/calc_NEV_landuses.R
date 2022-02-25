@@ -22,15 +22,15 @@ library(sf)
 library(mapview)
 
 ## (1) LOAD REQUIRED DATA
-##     1.1 - LCM_2020 land cover map on a 2km resolution (created in the script 
+##     1.1 - LCM_2007 land cover map on a 2km resolution (created in the script 
 ##           'process_lcm.R')
 ##     1.2 - SEER NEV 2km grid
 ## ===========================================================================
 
-## 1.1. 2km LCM 2020
+## 1.1. 2km LCM 2007
 ## -----------------
 setwd('D:/Documents/OneDrive - University of Exeter/Github/BNG/Data/LCM/LCM_2km/')
-lcm_2km <- read.csv('lcm_all_classes_2020.csv')
+lcm_2km <- read.csv('lcm_all_classes_2007.csv')
 
 ## 1.2. SEER 2km grid
 ## ------------------
@@ -40,66 +40,10 @@ seer_2km <- st_read('./SEER_net2km.shp')[, 'new2kid']
 lcm_2km <- merge(seer_2km, lcm_2km, by='new2kid')
 
 ## (2) DATA PROCESSING
-##     2.1 - Spatial join lcm and NEP
-##     2.2 - Aggregation of lcm classes to match NEV land uses
+##     2.1 - Aggregation of lcm classes to match NEV land uses
 ## ===========================================================
 
-## 2.1. Spatial join of NEP and 2km LCM
-## ------------------------------------
-
-# reproject NEP shapefile
-nep <- st_transform(nep, "EPSG:27700")
-
-# intersect SEER 2km grid and NEP to identify 2km cells within the NEP area
-nep_2km <- st_intersection(seer_2km, nep)
-cell_IDs <- unique(nep_2km$new2kid)
-nep_2km <- seer_2km[seer_2km$new2kid %in% cell_IDs,]
-
-# Crop lcm to match extent of NEP and remove NA values, if any
-lcm_crop <- crop(lcm, nep_2km)
-lcm_crop[lcm_crop < 1] <- NA
-
-# convert cropped lcm raster to a dataframe of spatial coordinates and values
-lcm_poly_df <- as.data.frame(cbind(xyFromCell(lcm_crop, 1:ncell(lcm_crop)), values(lcm_crop)))
-colnames(lcm_poly_df) <- c('x', 'y', 'lcm_class')
-
-# spatial intersection (for fun, done manually rather than using st_intersect. 
-# In large datasets this is MUCH faster)
-nep_lcm <- cbind(nep_2km, as.data.frame(matrix(0, nrow = nrow(nep_2km), ncol = 21)))
-colnames(nep_lcm) <- c('new2kid', as.character(1:21), 'geometry')
-
-for (i in nep_2km$new2kid){
-  bbox <- st_bbox(nep_2km[nep_2km$new2kid == i,])
-  idx <- which(lcm_poly_df$x >= bbox[1] &
-                 lcm_poly_df$x < bbox[3] &
-                 lcm_poly_df$y >= bbox[2] &
-                 lcm_poly_df$y < bbox[4])
-  tmp <- lcm_poly_df[idx, ]
-  classes <- table(tmp$lcm_class)
-  col_idx <- which(colnames(nep_lcm) %in% names(classes))
-  nep_lcm[nep_lcm$new2kid == i, col_idx] <- classes
-}
-
-# check that land uses match areas after intersection
-if(sum(rowSums(nep_lcm[,which(colnames(nep_lcm) %in% c(1:21)), drop=TRUE]) != 6400) > 0){
-  warning('The area of all the 25m lcm cells within each 2km cell does not equal 400 hectares in all cases!!!')
-}
-
-# if there are any NAs, assign those to the class most represented (this is a
-# bit convoluted but should work for both single or multiple cells having NAs)
-# I am assuming that in almost all cases there won't be any NA values or only 
-# a very few of them, to the extent that they won't significantly change the 
-# proportions of land within any 2km cell (10 NAsin one 2km cell would be 0.15% 
-# of the overall cell area). There should not be many NAs as the lcm has full 
-# coverage of the UK. After these lines we should no longer get the warning
-# from the code above.
-which_na <- which(rowSums(nep_lcm[,which(colnames(nep_lcm) %in% c(1:21)), drop=TRUE]) != 6400)
-num_na_vector <- 6400 - rowSums(nep_lcm[, which(colnames(nep_lcm) %in% c(1:21)), drop=TRUE])
-num_na <- num_na_vector[num_na_vector != 0]
-which_max <- which.max(nep_lcm[which_na, which(colnames(nep_lcm) %in% c(1:21)), drop=TRUE])
-nep_lcm[which_na, which_max] <- nep_lcm[which_na, which_max, drop=TRUE] + num_na
-
-## 2.2. Lcm agregation and conversion to hectares to match NEV input land uses.
+## 2.1. Lcm agregation and conversion to hectares to match NEV input land uses.
 ##      - Coastal: lcm classes 15 to 19
 ##      - Freshwater : lcm class 14
 ##      - Marine: lcm class 13
