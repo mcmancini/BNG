@@ -146,5 +146,5 @@ end_time <- Sys.time()
 end_time - start_time
 
 # save on disk
-filename <- paste('D:/Documents/Housing/Data/LCM/LCM_2km/lcm_all_classes_', lcm_year, '.csv', sep="")
+filename <- paste('D:/Documents/OneDrive - University of Exeter/Github/BNG/Data/LCM/LCM_2km/lcm_all_classes_', lcm_year, '.csv', sep="")
 st_write(lcm_2km, filename)
