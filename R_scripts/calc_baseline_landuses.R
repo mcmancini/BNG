@@ -29,12 +29,12 @@ library(mapview)
 
 ## 1.1. 2km LCM 2007
 ## -----------------
-setwd('D:/Documents/OneDrive - University of Exeter/Github/BNG/Data/LCM/LCM_2km/')
-lcm_2km <- read.csv('lcm_all_classes_2007.csv')
+setwd('D:/Documents/Github/BNG/Data/LCM/LCM_2km/')
+lcm_2km <- read.csv('lcm_all_classes_2007.csv', check.names = FALSE)
 
 ## 1.2. SEER 2km grid
 ## ------------------
-setwd('D:/Documents/OneDrive - University of Exeter/Github/BNG/Data/SEER_GRID/')
+setwd('D:/Documents/Github/BNG/Data/SEER_GRID/')
 seer_2km <- st_read('./SEER_net2km.shp')[, 'new2kid']
 
 lcm_2km <- merge(seer_2km, lcm_2km, by='new2kid')
@@ -60,20 +60,20 @@ lcm_2km <- merge(seer_2km, lcm_2km, by='new2kid')
 ## After the conversion check that the sum of all land uses for each cell equals 
 ## 400ha
 ## ----------------------------------------------------------------------------
-nep_lcm_2020 <- nep_lcm[, 'new2kid']
-nep_lcm_2020$imp_grs_ha <- nep_lcm[,which(colnames(nep_lcm) == 4), drop=TRUE] * 0.0625
-nep_lcm_2020$sng_ha <- rowSums(nep_lcm[,which(colnames(nep_lcm) %in% c(5:12)), drop=TRUE]) * 0.0625
-nep_lcm_2020$wood_ha <- rowSums(nep_lcm[, which(colnames(nep_lcm) %in% c(1:2)), drop=TRUE]) * 0.0625
-nep_lcm_2020$urbn_ha <- rowSums(nep_lcm[, which(colnames(nep_lcm) %in% c(20:21)), drop=TRUE]) * 0.0625
-nep_lcm_2020$arbl_ha <- nep_lcm[, which(colnames(nep_lcm) %in% c(3)), drop=TRUE] * 0.0625
-nep_lcm_2020$frshwtr_ha <- nep_lcm[, which(colnames(nep_lcm) %in% c(14)), drop=TRUE] * 0.0625
-nep_lcm_2020$marine_ha <- nep_lcm[, which(colnames(nep_lcm) %in% c(13)), drop=TRUE] * 0.0625
-nep_lcm_2020$ocean_ha <- 0
-nep_lcm_2020$coast_ha <- rowSums(nep_lcm[, which(colnames(nep_lcm) %in% c(15:19)), drop=TRUE]) * 0.0625
+lcm_2007 <- lcm_2km[, 'new2kid']
+lcm_2007$grass_ha <- lcm_2km[,which(colnames(lcm_2km) == 4), drop=TRUE] * 0.0625
+lcm_2007$sng_ha <- rowSums(lcm_2km[,which(colnames(lcm_2km) %in% c(5:12)), drop=TRUE]) * 0.0625
+lcm_2007$wood_ha <- rowSums(lcm_2km[, which(colnames(lcm_2km) %in% c(1:2)), drop=TRUE]) * 0.0625
+lcm_2007$urban_ha <- rowSums(lcm_2km[, which(colnames(lcm_2km) %in% c(20:21)), drop=TRUE]) * 0.0625
+lcm_2007$arable_ha <- lcm_2km[, which(colnames(lcm_2km) %in% c(3)), drop=TRUE] * 0.0625
+lcm_2007$freshwater_ha <- lcm_2km[, which(colnames(lcm_2km) %in% c(14)), drop=TRUE] * 0.0625
+lcm_2007$marine_ha <- lcm_2km[, which(colnames(lcm_2km) %in% c(13)), drop=TRUE] * 0.0625
+lcm_2007$ocean_ha <- 0
+lcm_2007$coast_ha <- rowSums(lcm_2km[, which(colnames(lcm_2km) %in% c(15:19)), drop=TRUE]) * 0.0625
 
-sum(rowSums(nep_lcm_2020[,3:11, drop=TRUE]) != 400) == 0
+sum(rowSums(lcm_2007[,3:11, drop=TRUE]) != 400) == 0
 
 ## (3) SAVE ON DISK
 ## ================
 setwd('D:/Documents/GitHub/NERC--Agile-Sprint/Data/')
-st_write(nep_lcm_2020, 'nep_baseline_lu.shp')
+st_write(lcm_2007, 'nep_baseline_lu.csv')
