@@ -76,4 +76,4 @@ sum(rowSums(lcm_2007[,3:11, drop=TRUE]) != 400) == 0
 ## (3) SAVE ON DISK
 ## ================
 setwd('D:/Documents/GitHub/NERC--Agile-Sprint/Data/')
-st_write(lcm_2007, 'nep_baseline_lu.csv')
+st_write(lcm_2007, 'baseline_lcm_2007.csv')
