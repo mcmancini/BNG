@@ -75,16 +75,15 @@ lcm_2007$marine_ha <- as.numeric(lcm_2km[, which(colnames(lcm_2km) %in% c(15)), 
 lcm_2007$coast_ha <- as.numeric(rowSums(lcm_2km[, which(colnames(lcm_2km) %in% c(17:21)), drop=TRUE]) * 0.0625)
 
 # assume ocean to be all empty cells
+
 uk_lcm_2007 <- lcm_2007 %>% 
-  st_drop_geometry() %>% # remove geometry as it stops the calc
-  mutate(ocean_ha = 400 - (select(., grass_ha:coast_ha) %>% rowSums))# %>% 
-  full_join(seer_2km, by = "new2kid") # add back in geometry 
+  mutate(ocean_ha = 400 - (grass_ha + sng_ha + wood_ha + urban_ha + arable_ha + freshwater_ha + marine_ha + coast_ha))
 
 # check how many 2km cells have ocean 
 uk_lcm_2007 %>% filter(ocean_ha > 0 ) %>% tally() # 2811 2km cells with ocean 
 
 # check all 2km cells = 400 
-sum(rowSums(uk_lcm_2007[,2:10, drop=TRUE]) != 400) == 0 
+sum(rowSums(uk_lcm_2007[,3:11, drop=TRUE]) != 400) == 0 
 
 ## (3) SAVE ON DISK
 ## ================
