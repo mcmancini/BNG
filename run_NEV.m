@@ -108,14 +108,9 @@ model_flags.run_recreation    = true;
 %      table, we also need to specify which CEH LCM it originates from in
 %      order to correclty calculate baselines for each of the NEV modules.
 % ------------------------------------------------------------------------
-base_ceh_lcm = '2007';
-baseline_lu = readtable(strcat(parameters.lcm_data_folder, 'lcm_aggr_2007.csv'));
+base_ceh_lcm = '2000';
+baseline_lu = readtable(strcat(parameters.lcm_data_folder, 'lcm_aggr_2000.csv'));
 parameters.base_ceh_lcm = base_ceh_lcm;
-
-baseline_lu.farm_ha = baseline_lu.arable_ha + baseline_lu.grass_ha;
-baseline_lu.arable_ha = [];
-baseline_lu.grass_ha = [];
-
 
 % server_flag = false;
 % conn = fcn_connect_database(server_flag);
@@ -136,13 +131,16 @@ baseline_lu.grass_ha = [];
 
 % 2.2. Load scenario land use
 % ---------------------------
-landuse_data_path = 'D:\Documents\GitHub\BNG\Data\Urban Sprawl - F.Eigenbrod\';
-scenario_lu = readtable(strcat(landuse_data_path, 'urban_sprawl_2km_farm.csv'));
-scenario_lu = scenario_lu(:, 1:6);
-scenario_lu{:, 2:6} = scenario_lu{:, 2:6} .* 400;
-scenario_lu.Properties.VariableNames = {'new2kid', 'water_ha', ...
-                                        'urban_ha', 'sng_ha', 'wood_ha',...
-                                        'farm_ha'};
+% landuse_data_path = 'D:\Documents\GitHub\BNG\Data\Urban Sprawl - F.Eigenbrod\';
+% scenario_lu = readtable(strcat(landuse_data_path, 'urban_sprawl_2km_farm.csv'));
+% scenario_lu = scenario_lu(:, 1:6);
+% scenario_lu{:, 2:6} = scenario_lu{:, 2:6} .* 400;
+% scenario_lu.Properties.VariableNames = {'new2kid', 'water_ha', ...
+%                                         'urban_ha', 'sng_ha', 'wood_ha',...
+%                                         'farm_ha'};
+scenario_lu = baseline_lu;
+scenario_lu.wood_ha = scenario_lu.wood_ha + scenario_lu.farm_ha;
+scenario_lu.farm_ha = zeros(height(scenario_lu), 1);
                                     
 % The baseline LCM is for the whole of the UK, whereas the
 % urbanisation model only for England and Wales. Reduce LCM to EW
