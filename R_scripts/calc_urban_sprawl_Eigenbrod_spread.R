@@ -3,14 +3,14 @@
 ##
 ## Author: Mattia Mancini from F. Eigenbrod
 ## Created: 29-Apr-2021
-## Last modified: 30-Sep-2021
+## Last modified: 23-Jun-2021
 ## --------------------------
 ## 
 ## DESCRIPTION
 ##
 ## Script that takes the projections for urbanization estimated by F. Eigenbrod 
 ## and colleagues (Eigenbrod et al. 2011),  remaps them to the SEER 2km grid and 
-## computes changes in land use on a 2km basis from 2000 to 2031, focusing on
+## computes changes in land use on a 2km basis from 2007 to 2031, focusing on
 ## the new urban land that can be created on farmland by cell. The new amount
 ## of urban land by 2031 is then converted into number of houses based on the 
 ## housing densities of the LPAs in which each 2km cell falls. 
@@ -23,7 +23,7 @@
 ## additional biodiversity for example improving existing woodland, as it 
 ## focusses on macro land use changes (e.g. farmland to woodland).
 ## The output of this script contains 2031 land uses and housing densities, and 
-## can be used as input to compute biodiversity changes from 2000 land uses
+## can be used as input to compute biodiversity changes from 2007 land uses
 ## =============================================================================
 
 ## (0) SETUP
@@ -41,51 +41,44 @@ library(mapview)      # mapview visualisation for debugging
 library(gridExtra)    # grid_arrange
 library(ggpubr)       # annotate_figure
 
-source('D:/Documents/Housing/R scripts/Functions/fcn_plt_map.R')
+source('D:/Documents/GitHub/BNG/R_scripts/Functions/fcn_plt_map.R')
 
 ## (1) LOAD THE DATA
 ## =================
 
 ## 1.1) Urban sprawl from F. Eigenbord, low density scenario
 ## ---------------------------------------------------------
-setwd('D:/Documents/Housing/Data/Urban Sprawl - F.Eigenbrod/')
+setwd('D:/Documents/GitHub/BNG/Data/Urban Sprawl - F.Eigenbrod/')
 urban_sprawl <- stack('TotalUrbanAndSuburban_2031_LowDensityScenario_1km.tif')
 urban_sprawl <- st_as_sf(rasterToPoints(urban_sprawl, spatial = TRUE))
 urban_sprawl <- st_set_crs(urban_sprawl, 27700)
 
-## 1.2) Land use data from NEV database
-## ------------------------------------
-conn <- dbConnect(Postgres(), 
-                  dbname = "nev",
-                  host = "localhost",
-                  port = 5432,
-                  user="postgres",
-                  password="postgres")
-
-df <- dbGetQuery(conn, "SELECT * FROM nevo.nevo_variables")
-df <- df[,c(1,5:9)]
+## 1.2) Land use data from land cover map 2007
+## -------------------------------------------
+df <- read.csv('D:/Documents/GitHub/BNG/Data/LCM/LCM_2km/lcm_aggr_2007.csv')
+df$water_ha <- df$freshwater_ha + df$marine_ha + df$coast_ha + df$ocean_ha
+df$farm_ha <- df$arable_ha + df$grass_ha
+cols_to_drop <- c('freshwater_ha', 'marine_ha', 'coast_ha', 'ocean_ha', 
+                  'arable_ha', 'grass_ha')
+df <- df[, !names(df) %in% cols_to_drop]
 
 # convert the 2km land use values in df into proportions
 df[,c(2:6)] <- df[,c(2:6)] / 400
-colnames(df) <- c('new2kid', 'percent_wat', 'percent_urb', 'percent_grs', 
-                  'percent_wod', 'percent_frm')
+colnames(df) <- c('new2kid', 'percent_grs', 'percent_wod', 'percent_urb', 
+                  'percent_wat', 'percent_frm')
 
 ## 1.3) 2km SEER grid
 ## ------------------
-seer_2km <- st_read('D:/Documents/Housing/Data/SEER_GRID/SEER_net2km.shp')
+seer_2km <- st_read('D:/Documents/GitHub/BNG/Data/SEER_GRID/SEER_net2km.shp')
 seer_2km <- seer_2km[, "new2kid"]
 
-## 1.4) LCM2000 to calculate rate of urban and suburban change from 2000 to 2031
-## -----------------------------------------------------------------------------
-setwd('D:/Documents/Housing/Output/')
-lcm_urban <- read.csv('lcm_urban_2000.csv')
 
-## 1.5) LPA boundaries
+## 1.4) LPA boundaries
 ## -------------------
-setwd("D:/Documents/Housing/Data/LPA/")
+setwd("D:/Documents/GitHub/BNG/Data/LPA/")
 lpa <- st_read("Local_Authority_Districts_April_2019_Boundaries_UK_BUC.shp")
 
-## 1.6) Load the .csv file containing number of addresses per hectare for each 
+## 1.5) Load the .csv file containing number of addresses per hectare for each 
 ##      LPA in 2018 and merge it to the lpa data.
 ##      England data: https://www.gov.uk/government/statistical-data-sets/live-tables-on-land-use-change-statistics
 ##      Wales data: https://statswales.gov.wales/Catalogue/Housing/Dwelling-Stock-Estimates/dwellingstockestimates-by-localauthority-tenure
@@ -95,7 +88,7 @@ lpa <- st_read("Local_Authority_Districts_April_2019_Boundaries_UK_BUC.shp")
 ##      authority, which is what we use here, dividing the total numbers by the
 ##      area of each planning authority
 ## -----------------------------------------------------------------------------
-setwd('D:/Documents/Housing/Data/Housing/')
+setwd('D:/Documents/GitHub/BNG/Data/Housing/')
 
 ## ENGLAND
 housing_eng <- read.csv('./P331_1516_addresses_ha_2018_England.csv')
