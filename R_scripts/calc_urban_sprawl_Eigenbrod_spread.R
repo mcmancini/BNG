@@ -204,78 +204,51 @@ sprawl_2km <- merge(sprawl_2km, df, by='new2kid')
 ## (3) CALCULATE HECTARE CHANGE IN URBAN AREAS FROM 2000 to 2031
 ## =============================================================
 sprawl_2km$ha_change <- round(sprawl_2km$ha_2031 - sprawl_2km$urban_ha, 4)
-sprawl_2km <- sprawl_2km[, c(1, 2, 3, 5, 4)]
+sprawl_2km <- sprawl_2km[, c(1:7, 9, 8)]
 
-## (4) COMPUTE AREA OF NEW BUILDS BY CELL AND ADJUST LAND USE
-## ==========================================================
+# one cell has a negative change of 1.5625ha.Set that to 0 and adjust
+# corresponding ha_2031 landuse
+sprawl_2km$ha_2031[sprawl_2km$ha_change < 0] <- sprawl_2km$urban_ha[sprawl_2km$ha_change < 0]
+sprawl_2km$ha_change[sprawl_2km$ha_change < 0] <- 0
 
-## 4.1) Join land uses SEER 2km data. This requires some assumptions, as NEV
-##      uses the LCM2007 for landuses, whereas the urbanisation model uses the 
-##      LCM2000. For this reason, and to calculate biodiversity changes from
-##      urbanisation, we take the urban land in 2000 and reassign it to the data
-##      from LCM2007. The difference between the two (likely more urban land in
-##      2007) will be assigned to farmland such that the totals will still be 
-##      400 hectares per cell
-## ----------------------------------------------------------------------------- 
+## (4) ADJUST LAND USES
+## ====================
+sprawl_lcm <- sprawl_2km
 
-# land uses
-seer_2km <- merge(seer_2km, df, by='new2kid')
-seer_2km$urban_2000 <- sprawl_2km$urban_ha / 400
+# New urban is built on farmland where possible
+sprawl_lcm$farm_ha = sprawl_lcm$farm_ha - sprawl_lcm$ha_change
 
-# set percentage urban to be equal to lcm2000, and add or remove the difference 
-# from farmland
-seer_2km$percent_urb <- seer_2km$urban_2000
-seer_2km$percent_frm <- 1 - rowSums(seer_2km[, 2:5, drop=TRUE])
-seer_2km <- seer_2km[, -which(colnames(seer_2km) == 'urban_2000')]
-
-# doing step in line 254 results in negative farmland for 144 cells: set
-# farmland to 0 and reassign that difference to woodland if available, otherwise
-# to semi-natural grassland
-ind <- which(seer_2km$percent_frm < 0)
-for (i in ind){
-  df <- seer_2km[i, ]
-  if (df$percent_wod >= df$percent_frm){
-    seer_2km$percent_wod[i] <- seer_2km$percent_wod[i] + seer_2km$percent_frm[i]
-    seer_2km$percent_frm[i] <- 0
-  } else if (df$percent_grs >= df$percent_frm){
-    seer_2km$percent_grs[i] <- seer_2km$percent_grs[i] + seer_2km$percent_frm[i]
-    seer_2km$percent_frm[i] <- 0
-  }
-}
-
-## Save on disk to use as baseline for biodiversity calculations
-setwd('D:/Documents/Housing/Output')
-st_write(seer_2km, 'seer_landuses_2000.csv')
-
-## 4.2) Adjust land uses from urbanisation
-## ---------------------------------------
-seer_2km$farmland_area <- seer_2km$percent_frm * 400 * 1e4
-seer_2km$area_new_builds <- 0
-new_urban_ids <- sprawl_2km$new2kid[sprawl_2km$ha_change > 0]
-
-for (i in new_urban_ids){
-  frm_needed <- sprawl_2km[sprawl_2km$new2kid %in% i, 'ha_change', drop=T] * 1e4
-  frm_avail <- seer_2km[seer_2km$new2kid %in% i, 'farmland_area', drop=T]
-  perc_urban_t0 <- seer_2km$percent_urb[seer_2km$new2kid %in% i]
-  
-  if (frm_avail >= frm_needed){
-    seer_2km$area_new_builds[seer_2km$new2kid %in% i] <- frm_needed
-    frm_needed_perc <- frm_needed / (400 * 1e4)
-    new_frm <- frm_avail - frm_needed
-    new_frm_perc <- new_frm / (400 * 1e4)
-    seer_2km$farmland_area[seer_2km$new2kid %in% i] <- new_frm
-    seer_2km$percent_frm[seer_2km$new2kid %in% i] <- new_frm_perc
-    seer_2km$percent_urb[seer_2km$new2kid %in% i] <- perc_urban_t0 + frm_needed_perc
+# where there is not enough farmland (36871 hectares, i.e. 1475ha per year), 
+# remove woodland and sng such that their relative proportions are maintained.
+for (i in sprawl_lcm$new2kid[sprawl_lcm$farm_ha < 0]){
+  celldata <- sprawl_lcm[sprawl_lcm$new2kid == i,]
+  if (abs(celldata$farm_ha) < celldata$wood_ha + celldata$sng_ha){
+    ratio <- ifelse(celldata$sng_ha != 0, celldata$wood_ha / (celldata$wood_ha + celldata$sng_ha), 1)
+    sprawl_lcm$wood_ha[sprawl_lcm$new2kid == i] <- sprawl_lcm$wood_ha[sprawl_lcm$new2kid == i] + celldata$farm_ha * ratio
+    sprawl_lcm$sng_ha[sprawl_lcm$new2kid == i] <- sprawl_lcm$sng_ha[sprawl_lcm$new2kid == i] + celldata$farm_ha * (1 - ratio)
+    sprawl_lcm$farm_ha[sprawl_lcm$new2kid == i] <- 0
   } else {
-    farm_avail_perc <- seer_2km$percent_frm[seer_2km$new2kid %in% i]
-    seer_2km$area_new_builds[seer_2km$new2kid %in% i] <- frm_avail
-    seer_2km$farmland_area[seer_2km$new2kid %in% i] <- 0
-    seer_2km$percent_frm[seer_2km$new2kid %in% i] <- 0
-    seer_2km$percent_urb[seer_2km$new2kid %in% i] <- perc_urban_t0 + farm_avail_perc
+    wood_sng <- celldata$wood_ha + celldata$sng_ha
+    sprawl_lcm$farm_ha[sprawl_lcm$new2kid == i] <- sprawl_lcm$farm_ha[sprawl_lcm$new2kid == i] + wood_sng
+    sprawl_lcm$ha_2031[sprawl_lcm$new2kid == i] <- sprawl_lcm$ha_2031[sprawl_lcm$new2kid == i] + sprawl_lcm$farm_ha[sprawl_lcm$new2kid == i]
+    sprawl_lcm$farm_ha[sprawl_lcm$new2kid == i] <- 0
+    sprawl_lcm$wood_ha[sprawl_lcm$new2kid == i] <- 0
+    sprawl_lcm$sng_ha[sprawl_lcm$new2kid == i] <- 0
   }
 }
 
-## (5) COMPUTE NUMBER OF NEW HOUSES BASED ON LPA HOUSING DENSITIES
+# check that landuses sum up to 400 ha
+sum(round(rowSums(sprawl_lcm[, c(2:5,7), drop=TRUE]), 3) != 400)
+
+## Save on disk
+sprawl_lcm <- sprawl_lcm[, -which(colnames(sprawl_lcm) %in% c('urban_ha', 'ha_change'))]
+colnames(sprawl_lcm)[which(colnames(sprawl_lcm) %in% 'ha_2031')] <- 'urban_ha' 
+
+setwd('D:/Documents/GitHub/BNG/Data/Urban Sprawl - F.Eigenbrod/')
+st_write(sprawl_lcm, 'urban_sprawl_2031_HDens.csv')
+
+
+## (4) COMPUTE NUMBER OF NEW HOUSES BASED ON LPA HOUSING DENSITIES
 ## ===============================================================
 housing_density <- st_buffer(housing_density, dist = 0)
 housing_2km <- st_intersection(seer_2km, housing_density)
@@ -292,8 +265,7 @@ for (i in unique(housing_2km$new2kid)){
   seer_2km$addresses_ha[seer_2km$new2kid == i] <- addresses_ha
 }
 
-setwd('D:/Documents/Housing/Output')
-st_write(seer_2km, 'seer_landuses_2031.csv')
+st_write(seer_2km, 'housing_densities_2031_HDens.csv')
 
 
 ## (4) MAP THE DATA
