@@ -53,19 +53,9 @@ urban_sprawl <- stack('TotalUrbanAndSuburban_2031_LowDensityScenario_1km.tif')
 urban_sprawl <- st_as_sf(rasterToPoints(urban_sprawl, spatial = TRUE))
 urban_sprawl <- st_set_crs(urban_sprawl, 27700)
 
-## 1.2) Land use data from land cover map 2007
+## 1.2) Land use data from land cover map 2000
 ## -------------------------------------------
-df <- read.csv('D:/Documents/GitHub/BNG/Data/LCM/LCM_2km/lcm_aggr_2007.csv')
-df$water_ha <- df$freshwater_ha + df$marine_ha + df$coast_ha + df$ocean_ha
-df$farm_ha <- df$arable_ha + df$grass_ha
-cols_to_drop <- c('freshwater_ha', 'marine_ha', 'coast_ha', 'ocean_ha', 
-                  'arable_ha', 'grass_ha')
-df <- df[, !names(df) %in% cols_to_drop]
-
-# convert the 2km land use values in df into proportions
-df[,c(2:6)] <- df[,c(2:6)] / 400
-colnames(df) <- c('new2kid', 'percent_grs', 'percent_wod', 'percent_urb', 
-                  'percent_wat', 'percent_frm')
+df <- read.csv('D:/Documents/GitHub/BNG/Data/LCM/LCM_2km/lcm_aggr_2000.csv')
 
 ## 1.3) 2km SEER grid
 ## ------------------
@@ -203,30 +193,18 @@ housing_density <- merge(lpa[, 3], housing_uk, by='lad19nm')
 sprawl_ctrds <- st_centroid(urban_sprawl)
 sprawl_2km <- st_join(seer_2km, sprawl_ctrds) %>% 
   group_by(new2kid) %>% 
-  summarise(mean = mean(TotalUrbanAndSuburban_2031_LowDensityScenario_1km))
-
-# from percentage land to hectares in 2031
-sprawl_2km$ha_2031 <- sprawl_2km$mean * 400
+  summarise(ha_2031 = 400 * mean(TotalUrbanAndSuburban_2031_LowDensityScenario_1km))
 
 #remove NAs: 4 cells inside 4 lakes/lochs in Scotland
 sprawl_2km$ha_2031[is.na(sprawl_2km$ha_2031)] <- 0
 
-# merge with LCM 2000
-sprawl_2km <- merge(sprawl_2km, lcm_urban, by='new2kid')
-sprawl_2km <- sprawl_2km[, -2]
+# merge with LCM 2000 urban land
+sprawl_2km <- merge(sprawl_2km, df, by='new2kid')
 
 ## (3) CALCULATE HECTARE CHANGE IN URBAN AREAS FROM 2000 to 2031
 ## =============================================================
 sprawl_2km$ha_change <- round(sprawl_2km$ha_2031 - sprawl_2km$urban_ha, 4)
 sprawl_2km <- sprawl_2km[, c(1, 2, 3, 5, 4)]
-
-# there are some cells that see fewer urban hectares in 2031 than in 2000: for
-# these, we set urban land to be equal to the 2000 lc, assuming that once
-# established, urban cannot be converted back to any other land type
-sprawl_2km$ha_2031[sprawl_2km$ha_change < 0] <- sprawl_2km$urban_ha[sprawl_2km$ha_change < 0]
-
-# compute again the urban change
-sprawl_2km$ha_change <- sprawl_2km$ha_2031 - sprawl_2km$urban_ha
 
 ## (4) COMPUTE AREA OF NEW BUILDS BY CELL AND ADJUST LAND USE
 ## ==========================================================
