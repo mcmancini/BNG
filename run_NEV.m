@@ -109,7 +109,8 @@ model_flags.run_recreation    = true;
 %      order to correclty calculate baselines for each of the NEV modules.
 % ------------------------------------------------------------------------
 base_ceh_lcm = '2000';
-baseline_lu = readtable(strcat(parameters.lcm_data_folder, 'lcm_aggr_2000.csv'));
+landuse_data_path = 'D:\Documents\GitHub\BNG\Data\Urban Sprawl - F.Eigenbrod\';
+baseline_lu = readtable(strcat(landuse_data_path, 'urban_sprawl_2031_HDens.csv'));
 parameters.base_ceh_lcm = base_ceh_lcm;
 
 % server_flag = false;
