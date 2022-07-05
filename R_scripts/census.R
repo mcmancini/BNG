@@ -1,10 +1,10 @@
 ## Census.R
 ## ========
 ##
-## Author: Mattia C. Mancini
+## Author: Mattia C. Mancini and Rebecca Collins
 ## Creaated: 21-Sep-2020
-## Last modified: 05-May-2021
-## --------------------------
+## Last modified: 04-June-2022
+## ---------------------------------------------
 ##
 ## Script that takes census data and data on income for England and assigns it 
 ## to the SEER 2km spatial grid
@@ -35,36 +35,36 @@ library(RPostgres)
 ##     1.7 - List of SEER 2km cell IDs in England
 ## ==============================================
 
+#  set path for different machines 
+path <- "C:/Code/BNG/"
 
 ## 1.1. Load the 2011 LSOA spatial files
 ##      These have been downloaded from 
 ##      https://census.ukdataservice.ac.uk/use-data/guides/boundary-data.aspx
 ## ---------------------------------------------------------------------------
-setwd('D:/Documents/GitHub/biodiversity-net-gain/Data/SEER_GIS/Boundaries_Census/')
-lsoa <- st_read('England_LSOA/england_lsoa_2011.shp')[, 1]
+setwd(paste0(path,'Data/Census/Boundaries_Census'))
+lsoa <- st_read('LSOA_2011/LSOAExtent_of_Realm2011/LSOA_2011_EW_BFE.shp')[, 1]
 lsoa$Area <- st_area(lsoa)
 colnames(lsoa) <- c('LSOA11CD', 'geometry', 'Area')
 
-## 1.2. MSOA spatial files
+## 1.2. MSOA to LSOA lookup table
 ##      These have been downloaded from
-##      https://census.ukdataservice.ac.uk/use-data/guides/boundary-data.aspx
-## --------------------------------------------------------------------------
-msoa <- st_read('England_MSOA/england_msoa_2011.shp')[, 1]
-msoa$Area <- st_area(msoa)
-colnames(msoa) <- c('MSOA11CD', 'geometry', 'Area')
+##      https://geoportal.statistics.gov.uk/datasets/fe6c55f0924b4734adf1cf7104a0173e_0/explore
+## -----------------------------------------------------------------------------
+msoa <- read.csv(paste0(path, "Data/Census/Boundaries_Census/Output_Area_to_LSOA_to_MSOA_to_Local_Authority_District_(December_2017)_Lookup_with_Area_Classifications_in_Great_Britain.csv"))[, c(4, 8)]
 
 ## 1.3. Household data
 ##      This comes from QS406UK: https://www.nomisweb.co.uk/census/2011/qs406uk
 ## ----------------------------------------------------------------------------
-setwd('D:/Documents/GitHub/biodiversity-net-gain/Data/SEER_SOCIO_ECON/Census_2011/')
-qs406 <- read.csv('QS406EW.csv')[, 3:4]
+setwd(paste0(path,'Data/Census/2011/'))
+qs406 <- read.csv('QS406UK.csv')[, 3:4]
 colnames(qs406) <- c('LSOA11CD', 'Households')
 lsoa <- merge(lsoa, qs406, by='LSOA11CD')
 
 ## 1.4. Population data from Census 2011
 ##      This comes from QS112UK: https://www.nomisweb.co.uk/census/2011/qs112uk
 ## ----------------------------------------------------------------------------
-qs112 <- read.csv('QS112EW.csv')[, 3:4]
+qs112 <- read.csv('QS112UK.csv')[, 3:4]
 colnames(qs112) <- c('LSOA11CD', 'Population')
 lsoa <- merge(lsoa, qs112, by='LSOA11CD')
 
@@ -72,20 +72,26 @@ lsoa <- merge(lsoa, qs112, by='LSOA11CD')
 ##      This comes from OMS: 
 ##      https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/smallareaincomeestimatesformiddlelayersuperoutputareasenglandandwales
 ## -----------------------------------------------------------------------------
-setwd('D:/Documents/GitHub/biodiversity-net-gain/Data/SEER_SOCIO_ECON/ONS_Income')
-income <- read.csv('MSOA_disposable_income_2018_EW.csv')[, c(1, 7)]
+setwd(paste0(path, "Data/SEER_SOCIO_ECON/ONS_Income"))
+income <- read.csv('income_estimates_2018_EW.csv')[, c(1, 7)]
 colnames(income) <- c('MSOA11CD', 'hh_income')
 msoa <- merge(msoa, income, by = 'MSOA11CD')
 
-## 1.6. Load the SEER 2km grid
+## 1.6. Attach MSOA income to LSOA using look-uptable 
+## --------------------------------------------------
+lsoa <- dplyr::left_join(lsoa, msoa, by = "LSOA11CD" )
+# set income to numeric 
+lsoa$hh_income <- as.numeric(lsoa$hh_income)
+
+## 1.7. Load the SEER 2km grid
 ## ---------------------------
-setwd('D:/Documents/GitHub/biodiversity-net-gain/Data/SEER_GIS/SEER_GRID/')
+setwd(paste0(path, 'Data/SEER_GRID/'))
 seer_2km <- st_read('./SEER_net2km.shp')
 
-## 1.7. List of SEER 2km cell IDs in England
+## 1.8. List of SEER 2km cell IDs in England
 ## -----------------------------------------
 conn <- dbConnect(Postgres(), 
-                  dbname = "nev",
+                  dbname = "NEV",
                   host = "localhost",
                   port = 5432,
                   user="postgres",
@@ -96,6 +102,9 @@ cell_id <- df$new2kid
 seer_2km_eng <- seer_2km[seer_2km$new2kid %in% cell_id, 'new2kid']
 
 rm(list = c('income', 'qs112', 'qs406', 'cell_id', 'seer_2km', 'df'))
+
+# set coordinate system to same - both BNG but not recognized as the same 
+lsoa <- lsoa %>% st_transform(crs = st_crs(seer_2km_eng))
 
 ## (2) ASSIGN DATA TO THE SEER 2km GRID
 ## ====================================
@@ -121,23 +130,25 @@ for (i in unique(census_join$new2kid)){
   population <- drop_units(sum(df$Population / df$Area * df$cell_area))
   pop_density <- population / 400 #population per hectare
   households <- drop_units(sum(df$Households / df$Area * df$cell_area))
+  med_income <- round(drop_units(sum(df$hh_income * df$cell_area) / sum(df$cell_area)))
   census_eng[census_eng$new2kid == i, 'Population'] <- population
   census_eng[census_eng$new2kid == i, 'Population_density'] <- pop_density
   census_eng[census_eng$new2kid == i, 'Households'] <- households
+  census_eng[census_eng$new2kid == i, 'Med_hh_inc'] <- med_income
 }
 
 ## 2.2. MSOA data
 ## --------------
-income_join <- st_intersection(seer_2km_eng, msoa)
-income_join$cell_area <- st_area(income_join)
-
-for (i in unique(income_join$new2kid)){
-  df <- income_join[income_join$new2kid == i, ]
-  med_income <- round(drop_units(sum(df$hh_income * df$cell_area) / sum(df$cell_area)))
-  census_eng[census_eng$new2kid == i, 'Med_hh_inc'] <- med_income
-}
+# income_join <- st_intersection(seer_2km_eng, msoa)
+# income_join$cell_area <- st_area(income_join)
+# 
+# for (i in unique(income_join$new2kid)){
+#   df <- income_join[income_join$new2kid == i, ]
+#   med_income <- round(drop_units(sum(df$hh_income * df$cell_area) / sum(df$cell_area)))
+#   census_eng[census_eng$new2kid == i, 'Med_hh_inc'] <- med_income
+# }
 
 
 ## (3) write on disk
 ## =================
-st_write(census_eng, 'D:/Documents/GitHub/biodiversity-net-gain/Data/SEER_SOCIO_ECON/Census_2011/SEER_2k_socioecon_eng.csv')
+st_write(census_eng, paste0(path,'/Data/SEER_SOCIO_ECON/SEER_2k_socioecon_eng.csv'))
