@@ -199,27 +199,6 @@ for (cell in city_spread$new2kid[idx]){
 }
 
 
-local_bio_offset_perc <- city_spread %>%  
-  # convert urban and water to % 
-  mutate(
-    percent_urban = urban_ha_scenario / 400, 
-    percent_water = water_ha_scenario / 400) %>% 
-  #select the 5 LU classes for NEV
-  dplyr::select( 
-    new2kid,
-    percent_frm,   
-    percent_grs, 
-    percent_wod, 
-    percent_urban, 
-    percent_water)
-
-# check cell percentage add up to 100 
-test <- local_bio_offset_perc %>% 
-  group_by(new2kid) %>% 
-  mutate(sum = percent_frm + percent_grs + percent_wod + percent_urban + percent_water) %>% 
-  filter(sum != 1)
-
-
 local_bio_offset_ha <- city_spread %>%
   dplyr::mutate(
     wood_ha = wood_ha_scenario + (local_offset/2), 
@@ -240,7 +219,7 @@ local_bio_offset_ha <- city_spread %>%
 # check cell areas
 local_bio_offset_ha %>% 
   group_by(new2kid) %>% 
-  mutate(sum = farm_ha + wood_ha + grass_ha + urban_ha +water_ha) %>% 
+  mutate(sum = farm_ha + wood_ha + sng_ha + urban_ha +water_ha) %>% 
   filter(sum != 400) # some small rounding errors 
 
 # check all offset is allocated 
@@ -248,7 +227,6 @@ local_bio_offset_ha %>%
 
 
 setwd(paste0(path,"Data/"))
-st_write(local_bio_offset_perc, 'local_bio_offset_percentage_lc.csv')
 st_write(local_bio_offset_ha, 'local_bio_offset_ha_lc.csv')
 
 
