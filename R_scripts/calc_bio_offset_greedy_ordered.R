@@ -1,10 +1,10 @@
 ## calc_bio_offset_equal_projects.R
 ## ================================
 ##
-## Author: Mattia Mancini
+## Author: Mattia Mancini and Rebecca Collins 
 ## Created: 10-Mar-2021
-## Last modified: 22-May-2021
-## --------------------------
+## Last modified: 05-June-2021
+## ------------------------------------------
 ##
 ## Script to locate compensation areas and to compute costs, biodiversity and 
 ## welfare trade-offs based on a series of criteria: 
@@ -27,10 +27,13 @@ library(ggplot2)
 library(viridis)      # scale_fill_viridis
 library(gridExtra)    # grid_arrange
 library(ggpubr)       # annotate_figure
+library(dplyr)
 
-source('D:/Documents/GitHub/biodiversity-net-gain/R Scripts/Functions/fcn_plt_map.R')
+source('D:/Documents/GitHub/biodiversity-net-gain/R Scripts/Functions/fcn_plt_map.R') # what is this? 
 
-
+#update path for different machines 
+path <- "C:/Code/BNG/" 
+  
 ## (1) LOAD THE DATA AND PREPROCESS IT
 ##     - 1. SEER 2km grid
 ##     - 2. new housing locations
@@ -40,31 +43,53 @@ source('D:/Documents/GitHub/biodiversity-net-gain/R Scripts/Functions/fcn_plt_ma
 
 ## 1.1. SEER 2km grid
 ## ------------------
-setwd('D:/Documents/GitHub/biodiversity-net-gain/Data/SEER_GIS/SEER_GRID/')
+setwd(paste0(path,'/Data/SEER_GRID/'))
 seer_2km <- st_read('./SEER_net2km.shp')
 seer_2km <- seer_2km[, "new2kid"]
 
 ## 1.2. New housing locations
 ## --------------------------
-setwd('D:/Documents/GitHub/biodiversity-net-gain/Data/Urban Sprawl - F.Eigenbrod/')
-city_spread <- read.csv('./urban_sprawl_2km_farm.csv')
+setwd(paste0(path,'Data/Urban Sprawl - F.Eigenbrod/'))
+
+city_base <- read.csv(paste0(path, "Data/LCM/LCM_2km/lcm_aggr_2000.csv")) %>% 
+  dplyr::rename(farm_ha_base = farm_ha, 
+         wood_ha_base = wood_ha, 
+         sng_ha_base = sng_ha, 
+         urban_ha_base = urban_ha, 
+         water_ha_base = water_ha)
+
+city_scenario <- read.csv('./urban_sprawl_2031_sprawl.csv')%>% 
+  dplyr::rename(farm_ha_scenario = farm_ha, 
+         wood_ha_scenario = wood_ha, 
+         sng_ha_scenario = sng_ha, 
+         urban_ha_scenario = urban_ha, 
+         water_ha_scenario = water_ha)
+
+city_spread <- dplyr::full_join(city_base, city_scenario, by = "new2kid") %>% 
+  mutate_if(is.numeric, round, digits=4) %>% # round to 4 as base cover is 4 dp
+  dplyr::mutate(area_new_builds = ifelse(urban_ha_scenario-urban_ha_base <= 0, 0, urban_ha_scenario-urban_ha_base), 
+                farmland_area = farm_ha_scenario, 
+                percent_frm = farm_ha_scenario / 400, 
+                percent_grs = sng_ha_scenario / 400, 
+                percent_wod = wood_ha_scenario / 400) 
+
 city_spread <- merge(seer_2km, city_spread, by = 'new2kid')
 
 ## 1.3. Load census data
 ## ---------------------
-setwd('D:/Documents/GitHub/biodiversity-net-gain/Data/SEER_SOCIO_ECON/Census_2011/')
+setwd(paste0(path, '/Data/SEER_SOCIO_ECON'))
 num_hh <- read.csv('./SEER_2k_socioecon_eng.csv')
-sp_df <- city_spread[, 'new2kid']
+sp_df <- city_spread %>% dplyr::select(new2kid)
 num_hh <- num_hh[num_hh$new2kid %in% sp_df$new2kid,]
 num_hh <- merge(sp_df, num_hh, by = 'new2kid', all = TRUE)
 
-## 1.4. Distance matrix
+## 1.4. Distance matrix - only required for WTP 
 ## --------------------
-a <- st_coordinates(st_centroid(city_spread))
-dist_matrix <- rdist(a, a)
-dist_matrix <- dist_matrix / 1600 # convert distance in miles (it is in meters)
-dist_matrix[dist_matrix > 0] <- log(dist_matrix[dist_matrix > 0]) # take the log of distance
-
+# a <- st_coordinates(st_centroid(city_spread))
+# dist_matrix <- rdist(a, a)
+# dist_matrix <- dist_matrix / 1600 # convert distance in miles (it is in meters)
+# dist_matrix[dist_matrix > 0] <- log(dist_matrix[dist_matrix > 0]) # take the log of distance
+  
 
 ## (2) OFFSET MECHANISMS
 ##     - Local compensation: new high biodiversity areas are created near the 
@@ -173,19 +198,51 @@ for (cell in city_spread$new2kid[idx]){
   city_spread$percent_wod[ind] <- round(city_spread$percent_wod[ind] + (bio_area_perc / 2), 9)
 }
 
-local_bio_offset <- city_spread[, c(1:11, 13, 12)]
-setwd('D:/Documents/GitHub/biodiversity-net-gain/CSV Files/bio_offset_landuses/delta_birds')
-st_write(local_bio_offset, 'local_bio_offset.csv')
+
+local_bio_offset_perc <- city_spread %>%  
+  # convert urban and water to % 
+  mutate(
+    percent_urban = urban_ha_scenario / 400, 
+    percent_water = water_ha_scenario / 400) %>% 
+  #select the 5 LU classes for NEV
+  dplyr::select( 
+    new2kid,
+    percent_frm,   
+    percent_grs, 
+    percent_wod, 
+    percent_urban, 
+    percent_water)
+
+
+local_bio_offset_ha <- local_bio_offset_perc %>% 
+  mutate(
+    farm_ha = 400 * percent_frm, 
+    grass_ha = 400* percent_grs, 
+    wood_ha = 400* percent_wod, 
+    urban_ha = 400* percent_urban, 
+    water_ha = 400*percent_water) %>% 
+  select(
+    new2kid, 
+    farm_ha, 
+    grass_ha, 
+    wood_ha, 
+    urban_ha, 
+    water_ha
+  )
+
+
+setwd(paste0(path,"Data/"))
+st_write(local_bio_offset_perc, 'local_bio_offset_percentage_lc.csv')
+st_write(local_bio_offset_ha, 'local_bio_offset_ha_lc.csv')
 
 
 ## 2.2. Offest based on max biodiversity improvements
 ## --------------------------------------------------
 # Load new housing locations
-setwd('D:/Documents/GitHub/biodiversity-net-gain/Data/Urban Sprawl - F.Eigenbrod/')
-max_bio_offset <- read.csv('./urban_sprawl_2km_farm.csv')
+setwd(paste0(path, '/Data/Urban Sprawl - F.Eigenbrod/'))
+max_bio_offset <- read.csv('./urban_sprawl_2031_sprawl.csv')
 max_bio_offset <- merge(seer_2km, max_bio_offset, by = 'new2kid')
 max_bio_offset$max_bio_offset <- 0
-max_bio_offset <- max_bio_offset[, c(1:11, 13, 12)]
 
 # Load biodiversity data
 setwd('D:/Documents/GitHub/biodiversity-net-gain/CSV Files/')

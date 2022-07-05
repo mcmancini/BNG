@@ -265,7 +265,7 @@ for (i in unique(housing_2km$new2kid)){
   seer_2km$addresses_ha[seer_2km$new2kid == i] <- addresses_ha
 }
 
-st_write(seer_2km, 'housing_densities_2031_HDens.csv')
+st_write(seer_2km, 'housing_densities_2031_sprawl.csv')
 
 
 ## (4) MAP THE DATA
