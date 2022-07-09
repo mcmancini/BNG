@@ -109,8 +109,8 @@ model_flags.run_recreation    = true;
 %      order to correclty calculate baselines for each of the NEV modules.
 % ------------------------------------------------------------------------
 base_ceh_lcm = '2000';
-landuse_data_path = 'D:\Documents\GitHub\BNG\Data\LCM\LCM_2km\';
-baseline_lu = readtable(strcat(landuse_data_path, 'lcm_aggr_2000.csv'));
+landuse_data_path = 'D:\Documents\GitHub\BNG\Data\Urban Sprawl - F.Eigenbrod\';
+baseline_lu = readtable(strcat(landuse_data_path, 'urban_sprawl_2031_sprawl.csv'));
 parameters.base_ceh_lcm = base_ceh_lcm;
 
 % server_flag = false;
@@ -132,16 +132,17 @@ parameters.base_ceh_lcm = base_ceh_lcm;
 
 % 2.2. Load scenario land use
 % ---------------------------
-% landuse_data_path = 'D:\Documents\GitHub\BNG\Data\Urban Sprawl - F.Eigenbrod\';
-% scenario_lu = readtable(strcat(landuse_data_path, 'urban_sprawl_2km_farm.csv'));
+landuse_data_path = 'D:\Documents\GitHub\BNG\Data\';
+scenario_lu = readtable(strcat(landuse_data_path, 'max_es_offset_ha_lc.csv'));
+% scenario_lu.urban_ha = baseline_lu.urban_ha;
 % scenario_lu = scenario_lu(:, 1:6);
 % scenario_lu{:, 2:6} = scenario_lu{:, 2:6} .* 400;
 % scenario_lu.Properties.VariableNames = {'new2kid', 'water_ha', ...
 %                                         'urban_ha', 'sng_ha', 'wood_ha',...
 %                                         'farm_ha'};
-scenario_lu = baseline_lu;
-scenario_lu.wood_ha = scenario_lu.wood_ha + scenario_lu.farm_ha;
-scenario_lu.farm_ha = zeros(height(scenario_lu), 1);
+% scenario_lu = baseline_lu;
+% scenario_lu.wood_ha = scenario_lu.wood_ha + scenario_lu.farm_ha;
+% scenario_lu.farm_ha = zeros(height(scenario_lu), 1);
                                     
 % The baseline LCM is for the whole of the UK, whereas the
 % urbanisation model only for England and Wales. Reduce LCM to EW
