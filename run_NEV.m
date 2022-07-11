@@ -70,7 +70,7 @@ parameters.clim_string                 = 'ukcp18';
 parameters.clim_scen_string            = 'rcp60';
 parameters.temp_pct_string             = '50';
 parameters.rain_pct_string             = '50';
-parameters.biodiversity_climate_string = 'future';
+parameters.biodiversity_climate_string = 'current';
 parameters.other_ha                    = 'baseline'; 
 parameters.landuse_change_timeframe    = 50; % land use change remains for these numbers of years
 
@@ -132,17 +132,10 @@ parameters.base_ceh_lcm = base_ceh_lcm;
 
 % 2.2. Load scenario land use
 % ---------------------------
-landuse_data_path = 'D:\Documents\Data\BNG\Data\';
-scenario_lu = readtable(strcat(landuse_data_path, 'max_es_offset_ha_lc.csv'));
-% scenario_lu.urban_ha = baseline_lu.urban_ha;
-% scenario_lu = scenario_lu(:, 1:6);
-% scenario_lu{:, 2:6} = scenario_lu{:, 2:6} .* 400;
-% scenario_lu.Properties.VariableNames = {'new2kid', 'water_ha', ...
-%                                         'urban_ha', 'sng_ha', 'wood_ha',...
-%                                         'farm_ha'};
-% scenario_lu = baseline_lu;
-% scenario_lu.wood_ha = scenario_lu.wood_ha + scenario_lu.farm_ha;
-% scenario_lu.farm_ha = zeros(height(scenario_lu), 1);
+scenario_lu = baseline_lu;
+scenario_lu.sng_ha = scenario_lu.sng_ha + 0.5 .* scenario_lu.farm_ha;
+scenario_lu.wood_ha = scenario_lu.wood_ha + 0.5 .* scenario_lu.farm_ha;
+scenario_lu.farm_ha = zeros(height(scenario_lu), 1);
                                     
 % The baseline LCM is for the whole of the UK, whereas the
 % urbanisation model only for England and Wales. Reduce LCM to EW
@@ -157,5 +150,45 @@ baseline_lu = baseline_lu(idx, :);
                             baseline_lu, ... 
                             scenario_lu);
 
+% remove NaNs
+benefits = fillmissing(benefits, 'constant', 0);
+costs = fillmissing(costs, 'constant', 0);
+env_outs = fillmissing(env_outs, 'constant', 0);
+es_outs = fillmissing(es_outs, 'constant', 0);
+hectares_chg = baseline_lu.farm_ha;
+
+%% (4) SAVE THE OUTPUT
+%  ===================
+all_farm2wood_sprawl_2031 = struct('benefits', benefits, ...
+                                   'costs', costs, ...
+                                   'env_outs', env_outs, ...
+                                   'es_outs', es_outs, ...
+                                   'hectares_chg', hectares_chg);
+                               
+save('Output/all_farm2wood_sprawl_2031', 'all_farm2wood_sprawl_2031')
 
 
+%% (5) SCENARIO SPECIFIC OUTPUT
+%  ============================
+%  CHANGE THIS BASED ON NEEDS
+
+% 5.1. Biodiverity: used for the identification of offset locations that
+%      maximise biodiversity improvements
+% ----------------------------------------------------------------------
+biodiversity_chg = array2table([baseline_lu.new2kid, ...
+                               env_outs.bio, ...
+                               env_outs.bio ./ hectares_chg]);
+biodiversity_chg = fillmissing(biodiversity_chg, 'constant', 0);
+biodiversity_chg.Properties.VariableNames = {'new2kid', 'sr_chg_perc', 'sr_chg_ha'};
+writetable(biodiversity_chg, 'Output/all_farm2mixed_bio_sprawl_2031.csv');
+
+% 5.2. Ecosystem services: used for the identification of offset locations 
+%      that maximise ES improvements
+% ------------------------------------------------------------------------
+tot_es = sum(es_outs{:,1:5}, 2);
+es_chg = array2table([baseline_lu.new2kid, ...
+                      tot_es, ...
+                      tot_es ./ hectares_chg]);
+es_chg = fillmissing(es_chg, 'constant', 0);
+es_chg.Properties.VariableNames = {'new2kid', 'tot_es', 'tot_es_ha'};
+writetable(es_chg, 'Output/all_farm2mixed_es_sprawl_2031.csv');
