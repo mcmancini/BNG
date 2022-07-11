@@ -62,8 +62,8 @@ addpath(genpath('D:\Documents\GitHub\Run_NEV_Scenarios\'));
 % 1.1. model parameters related to land uses and farm model
 % ---------------------------------------------------------
 parameters = fcn_set_parameters();
-parameter.parent_dir       = 'D:\Documents\NEV\Model Data\';
-parameters.lcm_data_folder = 'D:\Documents\GitHub\BNG\Data\LCM\LCM_2km\';
+parameters.parent_dir       = 'D:\Documents\NEV\Model Data\';
+parameters.lcm_data_folder  = 'D:\Documents\Data\BNG\Data\LCM\LCM_2km\';
 parameters.num_years                   = 40;
 parameters.start_year                  = 2020;
 parameters.clim_string                 = 'ukcp18';
@@ -109,7 +109,7 @@ model_flags.run_recreation    = true;
 %      order to correclty calculate baselines for each of the NEV modules.
 % ------------------------------------------------------------------------
 base_ceh_lcm = '2000';
-landuse_data_path = 'D:\Documents\GitHub\BNG\Data\Urban Sprawl - F.Eigenbrod\';
+landuse_data_path = 'D:\Documents\Data\BNG\Data\Urban Sprawl - F.Eigenbrod\';
 baseline_lu = readtable(strcat(landuse_data_path, 'urban_sprawl_2031_sprawl.csv'));
 parameters.base_ceh_lcm = base_ceh_lcm;
 
@@ -132,7 +132,7 @@ parameters.base_ceh_lcm = base_ceh_lcm;
 
 % 2.2. Load scenario land use
 % ---------------------------
-landuse_data_path = 'D:\Documents\GitHub\BNG\Data\';
+landuse_data_path = 'D:\Documents\Data\BNG\Data\';
 scenario_lu = readtable(strcat(landuse_data_path, 'max_es_offset_ha_lc.csv'));
 % scenario_lu.urban_ha = baseline_lu.urban_ha;
 % scenario_lu = scenario_lu(:, 1:6);
