@@ -174,4 +174,11 @@ es_chg = array2table([baseline_lu.new2kid, ...
                       tot_es ./ hectares_chg]);
 es_chg = fillmissing(es_chg, 'constant', 0);
 es_chg.Properties.VariableNames = {'new2kid', 'tot_es', 'tot_es_ha'};
-writetable(es_chg, 'Output/all_farm2mixed_es_sprawl_2031.csv');
+writetable(es_chg, 'Output/all_farm2mixed_tot_es_sprawl_2031.csv');
+
+% 5.3. Ecosystem services, for equity weighting
+% ---------------------------------------------
+tot_es = [array2table(baseline_lu.new2kid), es_outs]; 
+tot_es.hectares_chg = hectares_chg;
+tot_es.Properties.VariableNames(1) = {'new2kid'};
+writetable(es_chg, 'Output/all_farm2mixed_all_es_sprawl_2031.csv');
