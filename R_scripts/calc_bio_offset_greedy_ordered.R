@@ -31,12 +31,14 @@ library(viridis)      # scale_fill_viridis
 library(gridExtra)    # grid_arrange
 library(ggpubr)       # annotate_figure
 library(dplyr)
+library(RPostgres)
 
 source('D:/Documents/GitHub/biodiversity-net-gain/R Scripts/Functions/fcn_plt_map.R') # what is this? 
 
 #update path for different machines 
-path <- "C:/Code/BNG/" 
-  
+gitpath <- "C:/Code/BNG/" 
+datapath <- "C:/Data/BNG/"
+
 ## (1) LOAD THE DATA AND PREPROCESS IT
 ##     - 1. SEER 2km grid
 ##     - 2. new housing locations
@@ -46,27 +48,40 @@ path <- "C:/Code/BNG/"
 
 ## 1.1. SEER 2km grid
 ## ------------------
-setwd(paste0(path,'/Data/SEER_GRID/'))
+
+setwd(paste0(datapath, "Data/SEER_GRID/")) 
 seer_2km <- st_read('./SEER_net2km.shp')
 seer_2km <- seer_2km[, "new2kid"]
 
+# filter to England 
+conn <- dbConnect(Postgres(), 
+                  dbname = "NEV",
+                  host = "localhost",
+                  port = 5432,
+                  user="postgres",
+                  password="postgres")
+
+df <- dbGetQuery(conn, "SELECT * FROM regions_keys.key_grid_countries_england")
+cell_id <- df$new2kid
+seer_2km <- seer_2km[seer_2km$new2kid %in% cell_id, 'new2kid']
+
 ## 1.2. New housing locations
 ## --------------------------
-setwd(paste0(path,'Data/Urban Sprawl - F.Eigenbrod/'))
+setwd(paste0(datapath, "Data/Urban Sprawl - F.Eigenbrod/")) 
 
-city_base <- read.csv(paste0(path, "Data/LCM/LCM_2km/lcm_aggr_2000.csv")) %>% 
+city_base <- read.csv(paste0(datapath, "Data/LCM/LCM_2km/lcm_aggr_2000.csv")) %>% 
   dplyr::rename(farm_ha_base = farm_ha, 
-         wood_ha_base = wood_ha, 
-         sng_ha_base = sng_ha, 
-         urban_ha_base = urban_ha, 
-         water_ha_base = water_ha)
+                wood_ha_base = wood_ha, 
+                sng_ha_base = sng_ha, 
+                urban_ha_base = urban_ha, 
+                water_ha_base = water_ha)
 
 city_scenario <- read.csv('./urban_sprawl_2031_sprawl.csv')%>% 
   dplyr::rename(farm_ha_scenario = farm_ha, 
-         wood_ha_scenario = wood_ha, 
-         sng_ha_scenario = sng_ha, 
-         urban_ha_scenario = urban_ha, 
-         water_ha_scenario = water_ha)
+                wood_ha_scenario = wood_ha, 
+                sng_ha_scenario = sng_ha, 
+                urban_ha_scenario = urban_ha, 
+                water_ha_scenario = water_ha)
 
 city_spread <- dplyr::full_join(city_base, city_scenario, by = "new2kid") %>% 
   mutate_if(is.numeric, round, digits=4) %>% # round to 4 as base cover is 4 dp
@@ -80,19 +95,11 @@ city_spread <- merge(seer_2km, city_spread, by = 'new2kid')
 
 ## 1.3. Load census data
 ## ---------------------
-setwd(paste0(path, '/Data/SEER_SOCIO_ECON'))
-num_hh <- read.csv('./SEER_2k_socioecon_eng.csv')
+setwd(paste0(datapath,"/Data/SEER_SOCIO_ECON"))
+num_hh <- read.csv('./SEER_2k_socioecon_eng.csv') # need to recreate 
 sp_df <- city_spread %>% dplyr::select(new2kid)
 num_hh <- num_hh[num_hh$new2kid %in% sp_df$new2kid,]
 num_hh <- merge(sp_df, num_hh, by = 'new2kid', all = TRUE)
-
-## 1.4. Distance matrix - only required for WTP 
-## --------------------
-# a <- st_coordinates(st_centroid(city_spread))
-# dist_matrix <- rdist(a, a)
-# dist_matrix <- dist_matrix / 1600 # convert distance in miles (it is in meters)
-# dist_matrix[dist_matrix > 0] <- log(dist_matrix[dist_matrix > 0]) # take the log of distance
-  
 
 ## (2) OFFSET MECHANISMS
 ##     - Local compensation: new high biodiversity areas are created near the 
@@ -124,7 +131,7 @@ city_spread$percent_wod[idx] <- round(city_spread$percent_wod[idx] + (bio_area_p
 ## Case 2: There is some farmland available but not enough for biodiversity 
 ## compensation
 idx <- (city_spread$area_new_builds > city_spread$local_offset) &
-       (city_spread$farmland_area > 0)
+  (city_spread$farmland_area > 0)
 
 city_spread$local_offset[idx] <- city_spread$farmland_area[idx]
 city_spread$farmland_area[idx] <- 0
@@ -187,7 +194,7 @@ for (cell in city_spread$new2kid[idx]){
   # ind <- which(city_spread$new2kid %in% avail_cells$new2kid)
   # avail_cells <- st_centroid(city_spread[ind, ])
   # self_cell <- st_centroid(city_spread[city_spread$new2kid == cell, ])
-
+  
   dist <- st_distance(avail_cells, self_cell)
   avail_cells <- avail_cells[which(dist == min(dist)), ]
   new_bio_cell <- avail_cells$new2kid[sample(nrow(avail_cells), 1)]
@@ -200,7 +207,6 @@ for (cell in city_spread$new2kid[idx]){
   city_spread$percent_grs[ind] <- round(city_spread$percent_grs[ind] + (bio_area_perc / 2), 9)
   city_spread$percent_wod[ind] <- round(city_spread$percent_wod[ind] + (bio_area_perc / 2), 9)
 }
-
 
 local_bio_offset_ha <- city_spread %>%
   dplyr::mutate(
@@ -217,7 +223,6 @@ local_bio_offset_ha <- city_spread %>%
     sng_ha, 
     urban_ha, 
     water_ha)
-  
 
 # check cell areas
 local_bio_offset_ha %>% 
@@ -229,16 +234,16 @@ local_bio_offset_ha %>%
 (c(sum(city_spread$local_offset), sum(city_spread$area_new_builds))) 
 
 
-setwd(paste0(path,"Data/"))
-st_write(local_bio_offset_ha, 'local_bio_offset_ha_lc.csv')
+setwd(paste0(gitpath,"Output/"))
+st_write(local_bio_offset_ha, 'local_bio_offset_urban_sprawl.csv')
 
 
 ## 2.2. Offest based on max biodiversity improvements
 ## --------------------------------------------------
 # Load new housing locations
-setwd(paste0(path, '/Data/Urban Sprawl - F.Eigenbrod/'))
+setwd(paste0(datapath,"Data/Urban Sprawl - F.Eigenbrod/"))
 
-city_base <- read.csv(paste0(path, "Data/LCM/LCM_2km/lcm_aggr_2000.csv")) %>% 
+city_base <- read.csv(paste0(datapath,"Data/LCM/LCM_2km/lcm_aggr_2000.csv")) %>%
   dplyr::rename(farm_ha_base = farm_ha, 
                 wood_ha_base = wood_ha, 
                 sng_ha_base = sng_ha, 
@@ -265,16 +270,16 @@ max_bio_offset <- merge(seer_2km, max_bio_offset, by = 'new2kid')
 max_bio_offset$max_bio_offset <- 0
 
 # Load biodiversity data
-setwd(paste0(path,'Data/'))
-max_bio <- read.csv('bio_results_jncc_england.csv')[, c('new2kid', 
-                                                        'farm2mixed_sr_chg_perha')]
+setwd(paste0(gitpath, "Output/"))
+max_bio <- read.csv('all_farm2mixed_bio_sprawl_2031.csv')[, c('new2kid', 
+                                                              'sr_chg_ha')]
 
 max_bio <- merge(seer_2km, max_bio, by = 'new2kid')
 
 # reorder the cells from the highest species richness increases to the lowest
-sort_idx <- sort(max_bio$farm2mixed_sr_chg_perha, decreasing = TRUE, index.return = TRUE)[[2]]
+sort_idx <- sort(max_bio$sr_chg_ha, decreasing = TRUE, index.return = TRUE)[[2]]
 max_bio <- max_bio[sort_idx, ]
-idx_positive_bio <- sum(max_bio$farm2mixed_sr_chg_perha > 0)
+idx_positive_bio <- sum(max_bio$sr_chg_ha > 0)
 reshuffle_vector <- c(idx_positive_bio:nrow(max_bio))
 resampled_vector <- sample(reshuffle_vector)
 max_bio[reshuffle_vector, ] <- max_bio[resampled_vector,]
@@ -309,28 +314,6 @@ while(round(allocated_land, 5) < round(tot_offset, 5)){
   }
 }
 
-
-max_bio_offset_perc <- max_bio_offset %>%  
-  # convert urban and water to % 
-  mutate(
-    percent_urban = urban_ha_scenario / 400, 
-    percent_water = water_ha_scenario / 400) %>% 
-  #select the 5 LU classes for NEV
-  dplyr::select( 
-    new2kid,
-    percent_frm,   
-    percent_grs, 
-    percent_wod, 
-    percent_urban, 
-    percent_water)
-
-# check percentatge per cell = 1 
-test <- max_bio_offset_perc %>% 
-  group_by(new2kid) %>% 
-  mutate(sum = percent_frm + percent_grs + percent_wod + percent_urban + percent_water) %>% 
-  filter(sum != 1) # small rounding errors 
-
-
 max_bio_offset_ha <- max_bio_offset %>% 
   dplyr::mutate(
     wood_ha = wood_ha_scenario + (max_bio_offset/2), 
@@ -345,7 +328,9 @@ max_bio_offset_ha <- max_bio_offset %>%
     wood_ha, 
     sng_ha, 
     urban_ha, 
-    water_ha)
+    water_ha,
+    max_bio_offset) %>% 
+  dplyr::rename(offset_area_ha = max_bio_offset)
 
 # check cell areas
 max_bio_offset_ha %>% 
@@ -357,17 +342,16 @@ max_bio_offset_ha %>%
 (c(sum(max_bio_offset$max_bio_offset), sum(max_bio_offset$area_new_builds))) 
 
 #save 
-setwd(paste0(path,"Data/"))
-st_write(max_bio_offset_perc, 'max_bio_offset_perc_lc.csv')
-st_write(max_bio_offset_ha, 'max_bio_offset_ha_lc.csv')
+setwd(paste0(gitpath,"Output/"))
+st_write(max_bio_offset_ha, 'max_bio_offset_urban_sprawl_2031.csv')
 
 
 ## 2.3. Offset based on max Ecosystem Services
 ## -------------------------------------------
 # Load new housing locations
-setwd(paste0(path, '/Data/Urban Sprawl - F.Eigenbrod/'))
+setwd(paste0(datapath, '/Data/Urban Sprawl - F.Eigenbrod/'))
 
-city_base <- read.csv(paste0(path, "Data/LCM/LCM_2km/lcm_aggr_2000.csv")) %>% 
+city_base <- read.csv(paste0(datapath, "Data/LCM/LCM_2km/lcm_aggr_2000.csv")) %>% 
   dplyr::rename(farm_ha_base = farm_ha, 
                 wood_ha_base = wood_ha, 
                 sng_ha_base = sng_ha, 
@@ -393,19 +377,19 @@ max_es_offset <- merge(seer_2km, max_es_offset, by = 'new2kid')
 
 max_es_offset$max_es_offset <- 0
 
-# Load biodiversity data
-setwd(paste0(path,'Data/'))
-max_es <- read.csv('tot_es_benefits_2031_all_farm_to_mix.csv')[, c('new2kid',
-                                                        'tot_benefits_ha')]
+# Load ecosystem service data
+setwd(paste0(gitpath,'Output/'))
+max_es <- read.csv('all_farm2mixed_es_sprawl_2031.csv')[, c('new2kid',
+                                                                   'tot_es_ha')]
 
-max_es$tot_benefits_ha[is.na(max_es$tot_benefits_ha)] <- 0
+max_es$tot_es_ha[is.na(max_es$tot_es_ha)] <- 0
 
 max_es <- merge(seer_2km, max_es, by = 'new2kid')
 
 # reorder the cells from the highest species richness increases to the lowest
-sort_idx <- sort(max_es$tot_benefits_ha, decreasing = TRUE, index.return = TRUE)[[2]]
+sort_idx <- sort(max_es$tot_es_ha, decreasing = TRUE, index.return = TRUE)[[2]]
 max_es <- max_es[sort_idx, ]
-idx_positive_es <- sum(max_es$tot_benefits_ha > 0)
+idx_positive_es <- sum(max_es$tot_es_ha > 0)
 reshuffle_vector <- c(idx_positive_es:nrow(max_es))
 resampled_vector <- sample(reshuffle_vector)
 max_es[reshuffle_vector, ] <- max_es[resampled_vector,]
@@ -440,28 +424,6 @@ while(round(allocated_land, 5) < round(tot_offset, 5)){
   }
 }
 
-
-max_es_offset_perc <- max_es_offset %>%  
-  # convert urban and water to % 
-  mutate(
-    percent_urban = urban_ha_scenario / 400, 
-    percent_water = water_ha_scenario / 400) %>% 
-  #select the 5 LU classes for NEV
-  dplyr::select( 
-    new2kid,
-    percent_frm,   
-    percent_grs, 
-    percent_wod, 
-    percent_urban, 
-    percent_water)
-
-# check percentatge per cell = 1 
-max_es_offset_perc %>% 
-  group_by(new2kid) %>% 
-  mutate(sum = percent_frm + percent_grs + percent_wod + percent_urban + percent_water) %>% 
-  filter(sum != 1) # small rounding errors 
-
-
 max_es_offset_ha <- max_es_offset %>% 
   dplyr::mutate(
     wood_ha = wood_ha_scenario + (max_es_offset/2), 
@@ -476,7 +438,9 @@ max_es_offset_ha <- max_es_offset %>%
     wood_ha, 
     sng_ha, 
     urban_ha, 
-    water_ha)
+    water_ha, 
+    max_es_offset) %>% 
+  dplyr::rename(offset_area_ha = max_es_offset)
 
 # check cell areas
 max_es_offset_ha %>% 
@@ -488,10 +452,8 @@ max_es_offset_ha %>%
 (c(sum(max_es_offset$max_es_offset), sum(max_es_offset$area_new_builds))) 
 
 #save 
-setwd(paste0(path,"Data/"))
-st_write(max_es_offset_perc, 'max_es_offset_perc_lc.csv')
-st_write(max_es_offset_ha, 'max_es_offset_ha_lc.csv')
-
+setwd(paste0(gitpath,"Output/"))
+st_write(max_es_offset_ha, 'max_es_offset_urban_sprawl.csv')
 
 
 ## 2.4. offset based on max household wtp 
