@@ -181,4 +181,4 @@ writetable(es_chg, 'Output/all_farm2mixed_tot_es_sprawl_2031.csv');
 tot_es = [array2table(baseline_lu.new2kid), es_outs]; 
 tot_es.hectares_chg = hectares_chg;
 tot_es.Properties.VariableNames(1) = {'new2kid'};
-writetable(es_chg, 'Output/all_farm2mixed_all_es_sprawl_2031.csv');
+writetable(tot_es, 'Output/all_farm2mixed_all_es_sprawl_2031.csv');
