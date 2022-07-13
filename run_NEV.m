@@ -115,19 +115,19 @@ parameters.base_ceh_lcm = base_ceh_lcm;
 
 % 2.2. Load scenario land use
 % ---------------------------
-scenario_lu = baseline_lu;
-scenario_lu.sng_ha = scenario_lu.sng_ha + 0.5 .* scenario_lu.farm_ha;
-scenario_lu.wood_ha = scenario_lu.wood_ha + 0.5 .* scenario_lu.farm_ha;
-scenario_lu.farm_ha = zeros(height(scenario_lu), 1);
 % scenario_lu = baseline_lu;
-% landuse_data_path = 'D:\Documents\GitHub\BNG\Output\';
-% scenario_lu_eng = readtable(strcat(landuse_data_path, 'max_es_offset_urban_sprawl_equity_weighted.csv'));
-% scenario_lu_eng.offset_area_ha = [];
-% [~, idx] = ismember(scenario_lu.Properties.VariableNames, scenario_lu_eng.Properties.VariableNames); 
-% scenario_lu_eng = scenario_lu_eng(:,idx);
-% 
-% [~, idx] = intersect(scenario_lu.new2kid, scenario_lu_eng.new2kid);
-% scenario_lu(idx,:) = scenario_lu_eng;
+% scenario_lu.sng_ha = scenario_lu.sng_ha + 0.5 .* scenario_lu.farm_ha;
+% scenario_lu.wood_ha = scenario_lu.wood_ha + 0.5 .* scenario_lu.farm_ha;
+% scenario_lu.farm_ha = zeros(height(scenario_lu), 1);
+scenario_lu = baseline_lu;
+landuse_data_path = 'D:\Documents\GitHub\BNG\Output\';
+scenario_lu_eng = readtable(strcat(landuse_data_path, 'max_es_offset_urban_sprawl_equity_weighted.csv'));
+scenario_lu_eng.offset_area_ha = [];
+[~, idx] = ismember(scenario_lu.Properties.VariableNames, scenario_lu_eng.Properties.VariableNames); 
+scenario_lu_eng = scenario_lu_eng(:,idx);
+
+[~, idx] = intersect(scenario_lu.new2kid, scenario_lu_eng.new2kid);
+scenario_lu(idx,:) = scenario_lu_eng;
 
                                     
 %% (3) RUN THE MODELS
@@ -146,44 +146,44 @@ hectares_chg = baseline_lu.farm_ha;
 
 %% (4) SAVE THE OUTPUT
 %  ===================
-all_farm2mixed_sprawl_2031 = struct('benefits', benefits, ...
+max_es_offset_urban_sprawl_equity_weighted = struct('benefits', benefits, ...
                                     'costs', costs, ...
                                     'env_outs', env_outs, ...
                                     'es_outs', es_outs, ...
                                     'hectares_chg', hectares_chg, ...
                                     'new2kid', baseline_lu.new2kid);
                                
-save('Output/all_farm2mixed_sprawl_2031', 'all_farm2mixed_sprawl_2031')
+save('Output/max_es_offset_urban_sprawl_equity_weighted', 'max_es_offset_urban_sprawl_equity_weighted')
 
 
-%% (5) SCENARIO SPECIFIC OUTPUT
-%  ============================
-%  CHANGE THIS BASED ON NEEDS
-
-% 5.1. Biodiverity: used for the identification of offset locations that
-%      maximise biodiversity improvements
-% ----------------------------------------------------------------------
-biodiversity_chg = array2table([baseline_lu.new2kid, ...
-                               env_outs.bio, ...
-                               env_outs.bio ./ hectares_chg]);
-biodiversity_chg = fillmissing(biodiversity_chg, 'constant', 0);
-biodiversity_chg.Properties.VariableNames = {'new2kid', 'sr_chg_perc', 'sr_chg_ha'};
-writetable(biodiversity_chg, 'Output/all_farm2mixed_bio_sprawl_2031.csv');
-
-% 5.2. Ecosystem services: used for the identification of offset locations 
-%      that maximise ES improvements
-% ------------------------------------------------------------------------
-tot_es = sum(es_outs{:,1:5}, 2);
-es_chg = array2table([baseline_lu.new2kid, ...
-                      tot_es, ...
-                      tot_es ./ hectares_chg]);
-es_chg = fillmissing(es_chg, 'constant', 0);
-es_chg.Properties.VariableNames = {'new2kid', 'tot_es', 'tot_es_ha'};
-writetable(es_chg, 'Output/all_farm2mixed_tot_es_sprawl_2031.csv');
-
-% 5.3. Ecosystem services, for equity weighting
-% ---------------------------------------------
-tot_es = [array2table(baseline_lu.new2kid), es_outs(:,1:5)]; 
-tot_es.hectares_chg = hectares_chg;
-tot_es.Properties.VariableNames(1) = {'new2kid'};
-writetable(tot_es, 'Output/all_farm2mixed_all_es_sprawl_2031.csv');
+% %% (5) SCENARIO SPECIFIC OUTPUT
+% %  ============================
+% %  CHANGE THIS BASED ON NEEDS
+% 
+% % 5.1. Biodiverity: used for the identification of offset locations that
+% %      maximise biodiversity improvements
+% % ----------------------------------------------------------------------
+% biodiversity_chg = array2table([baseline_lu.new2kid, ...
+%                                env_outs.bio, ...
+%                                env_outs.bio ./ hectares_chg]);
+% biodiversity_chg = fillmissing(biodiversity_chg, 'constant', 0);
+% biodiversity_chg.Properties.VariableNames = {'new2kid', 'sr_chg_perc', 'sr_chg_ha'};
+% writetable(biodiversity_chg, 'Output/all_farm2mixed_bio_sprawl_2031.csv');
+% 
+% % 5.2. Ecosystem services: used for the identification of offset locations 
+% %      that maximise ES improvements
+% % ------------------------------------------------------------------------
+% tot_es = sum(es_outs{:,1:5}, 2);
+% es_chg = array2table([baseline_lu.new2kid, ...
+%                       tot_es, ...
+%                       tot_es ./ hectares_chg]);
+% es_chg = fillmissing(es_chg, 'constant', 0);
+% es_chg.Properties.VariableNames = {'new2kid', 'tot_es', 'tot_es_ha'};
+% writetable(es_chg, 'Output/all_farm2mixed_tot_es_sprawl_2031.csv');
+% 
+% % 5.3. Ecosystem services, for equity weighting
+% % ---------------------------------------------
+% tot_es = [array2table(baseline_lu.new2kid), es_outs(:,1:5)]; 
+% tot_es.hectares_chg = hectares_chg;
+% tot_es.Properties.VariableNames(1) = {'new2kid'};
+% writetable(tot_es, 'Output/all_farm2mixed_all_es_sprawl_2031.csv');
