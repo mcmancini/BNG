@@ -372,7 +372,7 @@ max_es_offset$max_es_offset <- 0
 
 # Load ecosystem service data
 setwd(paste0(gitpath,'Output/'))
-max_es <- read.csv('all_farm2mixed_es_sprawl_2031.csv')[, c('new2kid',
+max_es <- read.csv('all_farm2mixed_tot_es_sprawl_2031.csv')[, c('new2kid',
                                                                    'tot_es_ha')]
 
 max_es$tot_es_ha[is.na(max_es$tot_es_ha)] <- 0
@@ -496,13 +496,13 @@ max_es <- merge(max_es, med_income, by = 'new2kid')
 # equity weighting 
 base_income <- median(max_es$Med_hh_inc)
 mui <- 1.3
-cell_income <- num_hh$Med_hh_inc
+cell_income <- max_es$Med_hh_inc
 mui_weights <- base_income^mui * cell_income^(-mui)
 
 max_es$rec <- max_es$rec*mui_weights 
 
 max_es <- max_es %>%
-  dplyr::mutate(tot_es = (ghg + rec + flooding + totn + totp + water_non_use), 
+  dplyr::mutate(tot_es = (ghg + rec + flooding + totn + totp), 
                 tot_es_ha = tot_es/hectares_chg)
 
 max_es$tot_es_ha[is.na(max_es$tot_es_ha)] <- 0
