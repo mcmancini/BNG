@@ -13,23 +13,13 @@
 ##      compensation in areas with the highest potential biodiversity gains.
 ##   3) Offset based on max Ecosystem Services - locations for compensation in 
 ##      areas with the highest potential for ecosystem services gains.
-##
-## Commented out/no longer calculating: 
-##   4) Offset based on max household wtp - locations for compensation in areas 
-##      where biodiversity is valued the most. 
-##   5) Offset based on max population wtp 
-##   6) Offset based on max population wtp, equity weighted 
+##   4) Offset based on max Ecosystem Servicesequity weighted by recreation
 ## =============================================================================
 
 ## (0) SET-UP
 ## ==========
 rm(list=ls())
 library(sf)
-library(fields)       # rdist function
-library(ggplot2)
-library(viridis)      # scale_fill_viridis
-library(gridExtra)    # grid_arrange
-library(ggpubr)       # annotate_figure
 library(dplyr)
 library(RPostgres)
 
@@ -40,8 +30,6 @@ datapath <- "C:/Data/BNG/"
 ## (1) LOAD THE DATA AND PREPROCESS IT
 ##     - 1. SEER 2km grid
 ##     - 2. new housing locations
-##     - 3. Census data
-##     - 4. Distance matrix
 ## ===================================
 
 ## 1.1. SEER 2km grid
@@ -113,7 +101,7 @@ idx <- (city_spread$area_new_builds > 0) & (city_spread$farmland_area >= city_sp
 city_spread$local_offset[idx] <- city_spread$area_new_builds[idx]
 city_spread$farmland_area[idx] <- city_spread$farmland_area[idx] - city_spread$local_offset[idx]
 
-bio_area_perc <- city_spread$local_offset[idx] / (400 * 10000)
+bio_area_perc <- city_spread$local_offset[idx] / (400)
 city_spread$percent_frm[idx] <- round(city_spread$percent_frm[idx] - bio_area_perc, 9)
 city_spread$percent_grs[idx] <- round(city_spread$percent_grs[idx] + (bio_area_perc / 2), 9)
 city_spread$percent_wod[idx] <- round(city_spread$percent_wod[idx] + (bio_area_perc / 2), 9)
@@ -126,7 +114,7 @@ idx <- (city_spread$area_new_builds > city_spread$local_offset) &
 city_spread$local_offset[idx] <- city_spread$farmland_area[idx]
 city_spread$farmland_area[idx] <- 0
 
-bio_area_perc <- city_spread$local_offset[idx] / (400 * 10000)
+bio_area_perc <- city_spread$local_offset[idx] / (400)
 city_spread$percent_frm[idx] <- 0
 city_spread$percent_grs[idx] <- round(city_spread$percent_grs[idx] + (bio_area_perc / 2), 9)
 city_spread$percent_wod[idx] <- round(city_spread$percent_wod[idx] + (bio_area_perc / 2), 9)
