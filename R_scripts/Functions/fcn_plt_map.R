@@ -32,7 +32,7 @@ fcn_plt_map <- function(data,
                         plot_legend, 
                         scale, 
                         direction){
-  eng_border <- st_read('D:/Documents/Housing/Data/SEER_GRID/Countries_December_2016_Full_Clipped_Boundaries_in_Great_Britain.shp')
+  eng_border <- st_read('D:/Documents/SEER/____STATE_OF_GB____/SEER_GIS/Countries (Great Britain)/england_full_clipped.shp')
   # df <- data[, c('new2kid', column_name)]
   df <- data
   
@@ -94,8 +94,7 @@ fcn_plt_map <- function(data,
 }
 
 
-fcn_continuous_plot <- function(plot_data,
-                                country,
+fcn_continuous_plot <- function(plot_data, 
                                 column, 
                                 limits, 
                                 plot_title, 
@@ -104,49 +103,39 @@ fcn_continuous_plot <- function(plot_data,
                                 scale, 
                                 direction) {
   df <- plot_data
-  if (country == 'Great Britain'){
-    eng_border <- st_read('D:/Documents/Housing/Data/SEER_GRID/Countries_December_2016_Full_Clipped_Boundaries_in_Great_Britain.shp')
-  } else if (country == 'England'){
-    eng_border <- st_read('D:/Documents/Housing/Data/SEER_GRID/england_full_clipped.shp')
-  } else {
-    stop('Coutries can only be \'England\' or \'Great Britain\'')
-  }
-  
+  eng_border <- st_read('D:/Documents/SEER/____STATE_OF_GB____/SEER_GIS/Countries (Great Britain)/england_full_clipped.shp')
 
   formatLabel <- function(x) format(round(x, 3), nsmall = 2)
   formatIntegers <- function(x) format(x, scientific = 999)
-  # labels = parse(text=paste(seq(limits[1], limits[2], ((limits[2] - limits[1]) / 4)), "~ha"))
-  label_text <- paste(seq(limits[1], limits[2], ((limits[2] - limits[1]) / 4)))
-  label_text[5] <- "< 0"
-  labels <- label_text
+  labels = parse(text=paste(seq(0, 300, 100), "~ha"))
   
   plot <- ggplot() +
+    geom_sf(data = eng_border, fill = 'white', lwd = 1) +
     geom_sf(data = df,
             aes(fill = get(column), color = get(column))) +
     scale_fill_viridis(legend_title, 
-                       labels = labels,
+                       labels = labels, 
                        option = scale, 
                        limits = limits, 
                        discrete = FALSE,
                        direction = direction) +
     scale_color_viridis(legend_title, 
-                        labels = labels,
+                        labels = labels, 
                         option = scale, 
                         limits = limits, 
                         discrete = FALSE,
                         direction = direction) +
-    geom_sf(data = eng_border, fill = NA, lwd = 1) +
     ggtitle(plot_title) +
     theme_bw() +
     theme(panel.border = element_blank(), 
          panel.grid.major = element_blank(),
          panel.grid.minor = element_blank()) +
     coord_sf(datum = NA) +
-    theme(plot.title = element_text(size=30, hjust = 0.5),
+    theme(plot.title = element_text(size=30, hjust = 0),
           axis.text.x = element_text(size = 24),
           axis.text.y = element_text(size = 24),
           legend.text = element_text(size = 22),
-          legend.title = element_blank(),
+          legend.title = element_text(size = 24, hjust = 0.5),
           legend.position = legend_position, 
           legend.key.width=unit(1.5,"in"))
     
@@ -161,7 +150,7 @@ fcn_change_plot <- function(plot_data,
                             plot_title, 
                             legend_title, 
                             legend_position) {
-  eng_border <- st_read('D:/Documents/Housing/Data/SEER_GRID/Countries_December_2016_Full_Clipped_Boundaries_in_Great_Britain.shp')
+  eng_border <- st_read('D:/Documents/SEER/____STATE_OF_GB____/SEER_GIS/Countries (Great Britain)/england_full_clipped.shp')
   
   formatLabel <- function(x) format(round(x, 3), nsmall = 2)
   formatIntegers <- function(x) format(x, scientific = 999)
