@@ -565,7 +565,7 @@ setwd(paste0(gitpath,"Output/"))
 st_write(max_es_offset_ha_equity_weighted, 'max_es_offset_urban_sprawl_equity_weighted.csv')
 
 
-## 2.4. offset based max rec, equity weighted for recreation 
+## 2.5. offset based max rec, equity weighted for recreation 
 ## ---------------------------------------------------------
 
 # Load new housing locations
