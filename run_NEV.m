@@ -187,3 +187,13 @@ save('Output/max_rec_offset_urban_sprawl', 'max_rec_offset_urban_sprawl')
 % tot_es.hectares_chg = hectares_chg;
 % tot_es.Properties.VariableNames(1) = {'new2kid'};
 % writetable(tot_es, 'Output/all_farm2mixed_all_es_sprawl_2031.csv');
+%
+% % 5.4. Costs: used for the identification of offset locations that
+% %      minimise the opportunity cost of agriculture
+% % ------------------------------------------------------------------------
+% cost_table = array2table([baseline_lu.new2kid, ...
+%                           costs.farm, ...
+%                           costs.farm ./ hectares_chg]);
+% cost_table = fillmissing(cost_table, 'constant', 0);
+% cost_table.Properties.VariableNames = {'new2kid', 'farm_oc', 'farm_oc_ha'};
+% writetable(cost_table, 'Output/all_farm2mixed_OC_sprawl_2031.csv');
