@@ -691,3 +691,222 @@ max_rec_offset_ha_equity_weighted %>%
 setwd(paste0(gitpath,"Output/"))
 st_write(max_rec_offset_ha_equity_weighted, 'max_rec_offset_urban_sprawl_equity_weighted.csv')
 
+## 2.6. offset based max rec
+## -------------------------
+
+# Load new housing locations
+setwd(paste0(datapath, '/Data/Urban Sprawl - F.Eigenbrod/'))
+
+city_base <- read.csv(paste0(datapath, "Data/LCM/LCM_2km/lcm_aggr_2000.csv")) %>% 
+  dplyr::rename(farm_ha_base = farm_ha, 
+                wood_ha_base = wood_ha, 
+                sng_ha_base = sng_ha, 
+                urban_ha_base = urban_ha, 
+                water_ha_base = water_ha)
+
+city_scenario <- read.csv('./urban_sprawl_2031_sprawl.csv')%>% 
+  dplyr::rename(farm_ha_scenario = farm_ha, 
+                wood_ha_scenario = wood_ha, 
+                sng_ha_scenario = sng_ha, 
+                urban_ha_scenario = urban_ha, 
+                water_ha_scenario = water_ha)
+
+max_rec_offset <- dplyr::full_join(city_base, city_scenario, by = "new2kid") %>% 
+  mutate_if(is.numeric, round, digits=4) %>% # round to 4 as base cover is 4 dp
+  dplyr::mutate(area_new_builds = ifelse(urban_ha_scenario-urban_ha_base <= 0, 0, urban_ha_scenario-urban_ha_base), 
+                farmland_area = farm_ha_scenario, 
+                percent_frm = farm_ha_scenario / 400, 
+                percent_grs = sng_ha_scenario / 400, 
+                percent_wod = wood_ha_scenario / 400)
+
+max_rec_offset <- merge(seer_2km, max_rec_offset, by = 'new2kid')
+
+max_rec_offset$max_rec_offset <- 0
+
+# Load ecosystem service data
+setwd(paste0(gitpath,'Output/'))
+max_rec <- read.csv('all_farm2mixed_all_es_sprawl_2031.csv')
+
+max_rec <- merge(seer_2km, max_rec, by = 'new2kid')
+
+max_rec <- max_rec %>%
+  dplyr::mutate(rec_ha = rec/hectares_chg)
+
+max_rec$rec_ha[is.na(max_rec$rec_ha)] <- 0
+
+# reorder the cells from the highest species richness increases to the lowest
+sort_idx <- sort(max_rec$rec_ha, decreasing = TRUE, index.return = TRUE)[[2]]
+max_rec <- max_rec[sort_idx, ]
+idx_positive_rec <- sum(max_rec$rec_ha > 0)
+reshuffle_vector <- c(idx_positive_rec:nrow(max_rec))
+resampled_vector <- sample(reshuffle_vector)
+max_rec[reshuffle_vector, ] <- max_rec[resampled_vector,]
+
+# Tot offset area = tot area of new buildings
+tot_offset <- sum(max_rec_offset$area_new_builds)
+offset_proj <- max_rec_offset$area_new_builds[max_rec_offset$area_new_builds > 0]
+sort_idx <- sort(offset_proj, decreasing = TRUE, index.return = TRUE)[[2]]
+offset_proj <- offset_proj[sort_idx]
+
+allocated_land <- 0
+i <- 1
+j <- 1
+
+while(round(allocated_land, 5) < round(tot_offset, 5)){
+  offset_cell <- max_rec$new2kid[i]
+  offset_land <- offset_proj[j]
+  idx <- which(max_rec_offset$new2kid == offset_cell)
+  avail_land <- max_rec_offset$farmland_area[idx]
+  if(avail_land > offset_land){
+    max_rec_offset$max_rec_offset[idx] <- offset_land
+    max_rec_offset$farmland_area[idx] <- max_rec_offset$farmland_area[idx] - offset_land
+    offset_area_perc <- offset_land / 400 # CORRECT TO /400 TO CORRECT THE % ? 
+    max_rec_offset$percent_frm[idx] <- max_rec_offset$percent_frm[idx] - offset_area_perc
+    max_rec_offset$percent_grs[idx] <- max_rec_offset$percent_grs[idx] + 0.5 * offset_area_perc
+    max_rec_offset$percent_wod[idx] <- max_rec_offset$percent_wod[idx] + 0.5 * offset_area_perc
+    allocated_land <- allocated_land + offset_land
+    i <- i + 1
+    j <- j + 1
+  } else {
+    i <- i + 1
+  }
+}
+
+max_rec_offset_ha <- max_rec_offset %>% 
+  dplyr::mutate(
+    wood_ha = wood_ha_scenario + (max_rec_offset/2), 
+    sng_ha = sng_ha_scenario + (max_rec_offset/2)) %>% 
+  rename(
+    farm_ha = farmland_area,
+    urban_ha = urban_ha_scenario, 
+    water_ha = water_ha_scenario) %>% 
+  dplyr::select(
+    new2kid, 
+    farm_ha,
+    wood_ha, 
+    sng_ha, 
+    urban_ha, 
+    water_ha, 
+    max_rec_offset) %>% 
+  dplyr::rename(offset_area_ha = max_rec_offset)
+
+# check cell areas
+max_rec_offset_ha %>% 
+  group_by(new2kid) %>% 
+  mutate(sum = farm_ha + wood_ha + sng_ha + urban_ha +water_ha) %>% 
+  filter(sum != 400) # some small rounding errors 
+
+# check all offset is allocated 
+(c(sum(max_rec_offset$max_es_offset), sum(max_rec_offset$area_new_builds)))
+
+# save 
+setwd(paste0(gitpath,"Output/"))
+st_write(max_rec_offset_ha, 'max_rec_offset_urban_sprawl.csv')
+
+
+## 2.7. Offest based on min. cost
+## ------------------------------
+# Load new housing locations
+setwd(paste0(datapath,"Data/Urban Sprawl - F.Eigenbrod/"))
+
+city_base <- read.csv(paste0(datapath,"Data/LCM/LCM_2km/lcm_aggr_2000.csv")) %>%
+  dplyr::rename(farm_ha_base = farm_ha, 
+                wood_ha_base = wood_ha, 
+                sng_ha_base = sng_ha, 
+                urban_ha_base = urban_ha, 
+                water_ha_base = water_ha)
+
+city_scenario <- read.csv('./urban_sprawl_2031_sprawl.csv')%>% 
+  dplyr::rename(farm_ha_scenario = farm_ha, 
+                wood_ha_scenario = wood_ha, 
+                sng_ha_scenario = sng_ha, 
+                urban_ha_scenario = urban_ha, 
+                water_ha_scenario = water_ha)
+
+min_cost_offset <- dplyr::full_join(city_base, city_scenario, by = "new2kid") %>% 
+  mutate_if(is.numeric, round, digits=4) %>% # round to 4 as base cover is 4 dp
+  dplyr::mutate(area_new_builds = ifelse(urban_ha_scenario-urban_ha_base <= 0, 0, urban_ha_scenario-urban_ha_base), 
+                farmland_area = farm_ha_scenario, 
+                percent_frm = farm_ha_scenario / 400, 
+                percent_grs = sng_ha_scenario / 400, 
+                percent_wod = wood_ha_scenario / 400)
+
+min_cost_offset <- merge(seer_2km, min_cost_offset, by = 'new2kid')
+
+min_cost_offset$min_cost_offset <- 0
+
+# Load biodiversity data
+setwd(paste0(gitpath, "Output/"))
+min_cost <- read.csv('all_farm2mixed_OC_sprawl_2031.csv')[, c('new2kid', 
+                                                              'farm_oc_ha')]
+
+min_cost <- merge(seer_2km, min_cost, by = 'new2kid')
+
+# reorder the cells from the highest species richness increases to the lowest
+sort_idx <- sort(min_cost$farm_oc_ha, decreasing = FALSE, index.return = TRUE)[[2]]
+min_cost <- min_cost[sort_idx, ]
+idx_positive_bio <- sum(min_cost$farm_oc_ha > 0)
+reshuffle_vector <- c(idx_positive_bio:nrow(min_cost))
+resampled_vector <- sample(reshuffle_vector)
+min_cost[reshuffle_vector, ] <- min_cost[resampled_vector,]
+
+# Tot offset area = tot area of new buildings
+tot_offset <- sum(min_cost_offset$area_new_builds)
+offset_proj <- min_cost_offset$area_new_builds[min_cost_offset$area_new_builds > 0]
+sort_idx <- sort(offset_proj, decreasing = FALSE, index.return = TRUE)[[2]]
+offset_proj <- offset_proj[sort_idx]
+
+allocated_land <- 0
+i <- 1
+j <- 1
+
+while(round(allocated_land, 5) < round(tot_offset, 5)){
+  offset_cell <- min_cost$new2kid[i]
+  offset_land <- offset_proj[j]
+  idx <- which(min_cost_offset$new2kid == offset_cell)
+  avail_land <- min_cost_offset$farmland_area[idx]
+  if(avail_land > offset_land){
+    min_cost_offset$min_cost_offset[idx] <- offset_land
+    min_cost_offset$farmland_area[idx] <- min_cost_offset$farmland_area[idx] - offset_land
+    offset_area_perc <- offset_land / 400 # CORRECT TO /400 TO CORRECT THE % ? 
+    min_cost_offset$percent_frm[idx] <- min_cost_offset$percent_frm[idx] - offset_area_perc
+    min_cost_offset$percent_grs[idx] <- min_cost_offset$percent_grs[idx] + 0.5 * offset_area_perc
+    min_cost_offset$percent_wod[idx] <- min_cost_offset$percent_wod[idx] + 0.5 * offset_area_perc
+    allocated_land <- allocated_land + offset_land
+    i <- i + 1
+    j <- j + 1
+  } else {
+    i <- i + 1
+  }
+}
+
+min_cost_offset_ha <- min_cost_offset %>% 
+  dplyr::mutate(
+    wood_ha = wood_ha_scenario + (min_cost_offset/2), 
+    sng_ha = sng_ha_scenario + (min_cost_offset/2)) %>% 
+  rename(
+    farm_ha = farmland_area,
+    urban_ha = urban_ha_scenario, 
+    water_ha = water_ha_scenario) %>% 
+  dplyr::select(
+    new2kid, 
+    farm_ha,
+    wood_ha, 
+    sng_ha, 
+    urban_ha, 
+    water_ha,
+    min_cost_offset) %>% 
+  dplyr::rename(offset_area_ha = min_cost_offset)
+
+# check cell areas
+min_cost_offset_ha %>% 
+  group_by(new2kid) %>% 
+  mutate(sum = farm_ha + wood_ha + sng_ha + urban_ha +water_ha) %>% 
+  filter(sum != 400) # some small rounding errors 
+
+# check all offset is allocated 
+(c(sum(min_cost_offset$min_cost_offset), sum(min_cost_offset$area_new_builds))) 
+
+#save 
+setwd(paste0(gitpath,"Output/"))
+st_write(min_cost_offset_ha, 'min_cost_offset_urban_sprawl_2031.csv')
