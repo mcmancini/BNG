@@ -128,7 +128,7 @@ scenario_lu_eng = scenario_lu_eng(:,idx);
 
 [~, idx] = intersect(scenario_lu.new2kid, scenario_lu_eng.new2kid);
 scenario_lu(idx,:) = scenario_lu_eng;
-
+baseline_lu_eng = baseline_lu(idx, :);
                                     
 %% (3) RUN THE MODELS
 %  ==================
@@ -142,7 +142,11 @@ benefits = fillmissing(benefits, 'constant', 0);
 costs = fillmissing(costs, 'constant', 0);
 env_outs = fillmissing(env_outs, 'constant', 0);
 es_outs = fillmissing(es_outs, 'constant', 0);
-hectares_chg = baseline_lu.farm_ha;
+
+% compute change in hectares
+lu_chg = round(scenario_lu{:, 2:end} - baseline_lu{:, 2:end}, 4);
+lu_chg = abs(lu_chg);
+hectares_chg = sum(lu_chg, 2) ./ 2;
 
 %% (4) SAVE THE OUTPUT
 %  ===================
