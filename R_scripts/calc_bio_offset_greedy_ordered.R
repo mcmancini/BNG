@@ -24,8 +24,8 @@ library(dplyr)
 library(RPostgres)
 
 #update path for different machines 
-gitpath <- "C:/Code/BNG/" 
-datapath <- "C:/Data/BNG/"
+gitpath <- "D:/Documents/GitHub/BNG/" 
+datapath <- "D:/Documents/Data/BNG/"
 
 ## (1) LOAD THE DATA AND PREPROCESS IT
 ##     - 1. SEER 2km grid
@@ -41,7 +41,7 @@ seer_2km <- seer_2km[, "new2kid"]
 
 # filter to England 
 conn <- dbConnect(Postgres(), 
-                  dbname = "NEV",
+                  dbname = "nev",
                   host = "localhost",
                   port = 5432,
                   user="postgres",
@@ -360,7 +360,7 @@ max_es_offset$max_es_offset <- 0
 
 # Load ecosystem service data
 setwd(paste0(gitpath,'Output/'))
-max_es <- read.csv('all_farm2mixed_tot_es_sprawl_2031.csv')[, c('new2kid',
+max_es <- read.csv('all_farm2mixed_tot_es_sprawl_2031_scc.csv')[, c('new2kid',
                                                                    'tot_es_ha')]
 
 max_es$tot_es_ha[is.na(max_es$tot_es_ha)] <- 0
@@ -434,7 +434,7 @@ max_es_offset_ha %>%
 
 #save 
 setwd(paste0(gitpath,"Output/"))
-st_write(max_es_offset_ha, 'max_es_offset_urban_sprawl.csv')
+st_write(max_es_offset_ha, 'max_es_offset_urban_sprawl_scc.csv')
 
 
 ## 2.4. offset based max es, equity weighted for recreation 
@@ -471,7 +471,7 @@ max_es_offset$max_es_offset <- 0
 
 # Load ecosystem service data
 setwd(paste0(gitpath,'Output/'))
-max_es <- read.csv('all_farm2mixed_all_es_sprawl_2031.csv')
+max_es <- read.csv('all_farm2mixed_all_es_sprawl_2031_scc.csv')
 
 max_es <- merge(seer_2km, max_es, by = 'new2kid')
 
@@ -562,7 +562,7 @@ max_es_offset_ha_equity_weighted %>%
 
 # save 
 setwd(paste0(gitpath,"Output/"))
-st_write(max_es_offset_ha_equity_weighted, 'max_es_offset_urban_sprawl_equity_weighted.csv')
+st_write(max_es_offset_ha_equity_weighted, 'max_es_offset_urban_sprawl_equity_weighted_scc.csv')
 
 
 ## 2.5. offset based max rec, equity weighted for recreation 
@@ -599,7 +599,7 @@ max_rec_offset$max_rec_offset <- 0
 
 # Load ecosystem service data
 setwd(paste0(gitpath,'Output/'))
-max_rec <- read.csv('all_farm2mixed_all_es_sprawl_2031.csv')
+max_rec <- read.csv('all_farm2mixed_all_es_sprawl_2031_scc.csv')
 
 max_rec <- merge(seer_2km, max_rec, by = 'new2kid')
 
@@ -689,7 +689,7 @@ max_rec_offset_ha_equity_weighted %>%
 
 # save 
 setwd(paste0(gitpath,"Output/"))
-st_write(max_rec_offset_ha_equity_weighted, 'max_rec_offset_urban_sprawl_equity_weighted.csv')
+st_write(max_rec_offset_ha_equity_weighted, 'max_rec_offset_urban_sprawl_equity_weighted_scc.csv')
 
 ## 2.6. offset based max rec
 ## -------------------------
@@ -725,7 +725,7 @@ max_rec_offset$max_rec_offset <- 0
 
 # Load ecosystem service data
 setwd(paste0(gitpath,'Output/'))
-max_rec <- read.csv('all_farm2mixed_all_es_sprawl_2031.csv')
+max_rec <- read.csv('all_farm2mixed_all_es_sprawl_2031_scc.csv')
 
 max_rec <- merge(seer_2km, max_rec, by = 'new2kid')
 
@@ -801,7 +801,7 @@ max_rec_offset_ha %>%
 
 # save 
 setwd(paste0(gitpath,"Output/"))
-st_write(max_rec_offset_ha, 'max_rec_offset_urban_sprawl.csv')
+st_write(max_rec_offset_ha, 'max_rec_offset_urban_sprawl_scc.csv')
 
 
 ## 2.7. Offest based on min. cost
@@ -837,7 +837,7 @@ min_cost_offset$min_cost_offset <- 0
 
 # Load biodiversity data
 setwd(paste0(gitpath, "Output/"))
-min_cost <- read.csv('all_farm2mixed_OC_sprawl_2031.csv')[, c('new2kid', 
+min_cost <- read.csv('all_farm2mixed_OC_sprawl_2031_scc.csv')[, c('new2kid', 
                                                               'farm_oc_ha')]
 
 min_cost <- merge(seer_2km, min_cost, by = 'new2kid')
@@ -909,4 +909,4 @@ min_cost_offset_ha %>%
 
 #save 
 setwd(paste0(gitpath,"Output/"))
-st_write(min_cost_offset_ha, 'min_cost_offset_urban_sprawl_2031.csv')
+st_write(min_cost_offset_ha, 'min_cost_offset_urban_sprawl_2031_scc.csv')

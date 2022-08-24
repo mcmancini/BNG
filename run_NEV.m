@@ -62,17 +62,18 @@ addpath(genpath('D:\Documents\GitHub\Run_NEV_Scenarios\'));
 % 1.1. model parameters related to land uses and farm model
 % ---------------------------------------------------------
 parameters = fcn_set_parameters();
-parameters.parent_dir       = 'D:\Documents\NEV\Model Data\';
-parameters.lcm_data_folder  = 'D:\Documents\Data\BNG\Data\LCM\LCM_2km\';
-parameters.num_years                   = 40;
-parameters.start_year                  = 2020;
-parameters.clim_string                 = 'ukcp18';
-parameters.clim_scen_string            = 'rcp60';
-parameters.temp_pct_string             = '50';
-parameters.rain_pct_string             = '50';
-parameters.biodiversity_climate_string = 'current';
-parameters.other_ha                    = 'baseline'; 
-parameters.landuse_change_timeframe    = 50; % land use change remains for these numbers of years
+parameters.parent_dir                     = 'D:\Documents\NEV\Model Data\';
+parameters.lcm_data_folder                = 'D:\Documents\Data\BNG\Data\LCM\LCM_2km\';
+parameters.num_years                      = 40;
+parameters.start_year                     = 2020;
+parameters.clim_string                    = 'ukcp18';
+parameters.clim_scen_string               = 'rcp60';
+parameters.temp_pct_string                = '50';
+parameters.rain_pct_string                = '50';
+parameters.biodiversity_climate_string    = 'current';
+parameters.other_ha                       = 'baseline'; 
+parameters.landuse_change_timeframe       = 50;    % land use change remains for these numbers of years
+parameters.carbon_price                   = 'scc'; % non_traded_central, scc ...
 
 % 1.2. Model parameters for valuation
 % -----------------------------------
@@ -115,20 +116,20 @@ parameters.base_ceh_lcm = base_ceh_lcm;
 
 % 2.2. Load scenario land use
 % ---------------------------
-scenario_lu = baseline_lu;
-scenario_lu.sng_ha = scenario_lu.sng_ha + 0.5 .* scenario_lu.farm_ha;
-scenario_lu.wood_ha = scenario_lu.wood_ha + 0.5 .* scenario_lu.farm_ha;
-scenario_lu.farm_ha = zeros(height(scenario_lu), 1);
 % scenario_lu = baseline_lu;
-% landuse_data_path = 'D:\Documents\GitHub\BNG\Output\';
-% scenario_lu_eng = readtable(strcat(landuse_data_path, 'min_cost_offset_urban_sprawl_2031.csv'));
-% scenario_lu_eng.offset_area_ha = [];
-% [~, idx] = ismember(scenario_lu.Properties.VariableNames, scenario_lu_eng.Properties.VariableNames); 
-% scenario_lu_eng = scenario_lu_eng(:,idx);
-% 
-% [~, idx] = intersect(scenario_lu.new2kid, scenario_lu_eng.new2kid);
-% scenario_lu(idx,:) = scenario_lu_eng;
-% baseline_lu_eng = baseline_lu(idx, :);
+% scenario_lu.sng_ha = scenario_lu.sng_ha + 0.5 .* scenario_lu.farm_ha;
+% scenario_lu.wood_ha = scenario_lu.wood_ha + 0.5 .* scenario_lu.farm_ha;
+% scenario_lu.farm_ha = zeros(height(scenario_lu), 1);
+scenario_lu = baseline_lu;
+landuse_data_path = 'D:\Documents\GitHub\BNG\Output\';
+scenario_lu_eng = readtable(strcat(landuse_data_path, 'max_es_offset_urban_sprawl_scc.csv'));
+scenario_lu_eng.offset_area_ha = [];
+[~, idx] = ismember(scenario_lu.Properties.VariableNames, scenario_lu_eng.Properties.VariableNames); 
+scenario_lu_eng = scenario_lu_eng(:,idx);
+
+[~, idx] = intersect(scenario_lu.new2kid, scenario_lu_eng.new2kid);
+scenario_lu(idx,:) = scenario_lu_eng;
+baseline_lu_eng = baseline_lu(idx, :);
                                     
 %% (3) RUN THE MODELS
 %  ==================
@@ -150,14 +151,14 @@ hectares_chg = sum(lu_chg, 2) ./ 2;
 
 %% (4) SAVE THE OUTPUT
 %  ===================
-all_farm2mixed_sprawl_2031_scc = struct('benefits', benefits, ...
+max_es_offset_urban_sprawl_scc = struct('benefits', benefits, ...
                                     'costs', costs, ...
                                     'env_outs', env_outs, ...
                                     'es_outs', es_outs, ...
                                     'hectares_chg', hectares_chg, ...
                                     'new2kid', baseline_lu.new2kid);
                                
-save('Output/all_farm2mixed_sprawl_2031_scc', 'all_farm2mixed_sprawl_2031_scc')
+save('Output/max_es_offset_urban_sprawl_scc', 'max_es_offset_urban_sprawl_scc')
 
 
 %% (5) SCENARIO SPECIFIC OUTPUT
