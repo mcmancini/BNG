@@ -840,15 +840,18 @@ setwd(paste0(gitpath, "Output/"))
 min_cost <- read.csv('all_farm2mixed_OC_sprawl_2031.csv')[, c('new2kid', 
                                                               'farm_oc_ha')]
 
-min_cost <- merge(seer_2km, min_cost, by = 'new2kid')
+min_cost <- merge(seer_2km, min_cost, by = 'new2kid') 
+# remove cost = 0 for selection 
+min_cost <- min_cost %>% filter(farm_oc_ha != 0)
+
 
 # reorder the cells from the highest species richness increases to the lowest
 sort_idx <- sort(min_cost$farm_oc_ha, decreasing = FALSE, index.return = TRUE)[[2]]
 min_cost <- min_cost[sort_idx, ]
-idx_positive_bio <- sum(min_cost$farm_oc_ha > 0)
-reshuffle_vector <- c(idx_positive_bio:nrow(min_cost))
-resampled_vector <- sample(reshuffle_vector)
-min_cost[reshuffle_vector, ] <- min_cost[resampled_vector,]
+# idx_positive_bio <- sum(min_cost$farm_oc_ha > 0)
+# reshuffle_vector <- c(idx_positive_bio:nrow(min_cost))
+# resampled_vector <- sample(reshuffle_vector)
+# min_cost[reshuffle_vector, ] <- min_cost[resampled_vector,]
 
 # Tot offset area = tot area of new buildings
 tot_offset <- sum(min_cost_offset$area_new_builds)
@@ -880,6 +883,11 @@ while(round(allocated_land, 5) < round(tot_offset, 5)){
   }
 }
 
+min_cost_offset <- min_cost_offset %>% 
+  st_drop_geometry()
+
+min_cost_offset <- merge(seer_2km, min_cost_offset, by = 'new2kid')
+
 min_cost_offset_ha <- min_cost_offset %>% 
   dplyr::mutate(
     wood_ha = wood_ha_scenario + (min_cost_offset/2), 
@@ -906,6 +914,7 @@ min_cost_offset_ha %>%
 
 # check all offset is allocated 
 (c(sum(min_cost_offset$min_cost_offset), sum(min_cost_offset$area_new_builds))) 
+
 
 #save 
 setwd(paste0(gitpath,"Output/"))

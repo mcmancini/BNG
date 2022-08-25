@@ -1,10 +1,10 @@
 ## map_offset_locations.R
 ## ======================
 ##
-## Author: Mattia C. Mancini
+## Author: Mattia C. Mancini and Rebecca Collins
 ## Created: 22-May-2021
-## Last modified: 22-May-2021
-## --------------------------
+## Last modified: 16-August-2022
+## ---------------------------------------------
 ##
 ## DESCRIPTION
 ##
@@ -14,10 +14,8 @@
 ## The criteria based on which offset locations are selected are the following:
 ##   1. Local offset
 ##   2. Offset in locations that generate the highest biodiversity improvements
-##   3. Offset in locations that generate the highest household WTP
-##   4. Offset in locations that generate the highest population WTP
-##   5. Offset in locations that generate the highest hshold. WTP, equity weigh.
-##   6. Offset in locations that generate the highest pop. WTP, equity weigh.
+##   3. Offset in locations that generate the highest ecosystem services
+##   4. Offset in locations that generate the highest equity weighted recreation 
 ## =============================================================================
 
 ## (0) SETUP
@@ -27,53 +25,65 @@ library(sf)
 library(gridExtra)    # grid_arrange
 library(ggpubr)       # annotate_figure
 
-source('D:/Documents/GitHub/biodiversity-net-gain/R Scripts/Functions/fcn_plt_map.R')
+#update path for different machines 
+gitpath <- "C:/Code/BNG/" 
+datapath <- "C:/Data/BNG/"
+
+source(paste0(gitpath, '/R_scripts/Functions/fcn_plt_map.R'))
 
 ## (1) LOAD THE DATA
 ##     1.1. - SEER 2km grid
 ##     1.2. - Offset locations, local offset
 ##     1.3. - Offset locations, max biodiversity gains
-##     1.4. - Offset locations, max household WTP
-##     1.5. - Offset locations, max population WTP
-##     1.6. - Offset locations, max household WTP, equity weighted
-##     1.7. - Offset locations, max population WTP, equity weighted
+##     1.4. - Offset locations, max ecosystem services
+##     1.5. - Offset locations, equity weighted for recreation 
+##     1.6. - Offset locations, min cost
 ## ================================================================
 
 ## 1.1. Seer 2km grid
 ## ------------------
-seer_2km <- st_read('D:/Documents/SEER/____STATE_OF_GB____/SEER_GIS/SEER_GRID/SEER_net2km.shp')
+setwd(paste0(datapath, "Data/SEER_GRID/")) 
+seer_2km <- st_read('./SEER_net2km.shp')
 seer_2km <- seer_2km[, "new2kid"]
+
+# filter to England 
+conn <- dbConnect(Postgres(), 
+                  dbname = "NEV",
+                  host = "localhost",
+                  port = 5432,
+                  user="postgres",
+                  password="postgres")
+
+df <- dbGetQuery(conn, "SELECT * FROM regions_keys.key_grid_countries_england")
+cell_id <- df$new2kid
+seer_2km <- seer_2km[seer_2km$new2kid %in% cell_id, 'new2kid']
 
 ## 1.2. Offset locations, local offset
 ## -----------------------------------
-setwd('D:/Documents/GitHub/biodiversity-net-gain/CSV Files/bio_offset_landuses/delta_birds/')
-local_bio_offset <- read.csv('local_bio_offset.csv')
+setwd(paste0(gitpath,'Output/'))
+local_bio_offset <- read.csv('local_bio_offset_urban_sprawl.csv')
 local_bio_offset <- merge(seer_2km, local_bio_offset, by='new2kid')
 
 ## 1.3. Offset locations, max biodiversity gains
 ## ---------------------------------------------
-max_bio_offset <- read.csv('max_bio_offset.csv')
+max_bio_offset <- read.csv('max_bio_offset_urban_sprawl_2031.csv')
 max_bio_offset <- merge(seer_2km, max_bio_offset, by='new2kid')
 
-## 1.4. Offset locations, max household WTP
-## ----------------------------------------
-wtp_hh_offset <- read.csv('wtp_hh_offset.csv')
-wtp_hh_offset <- merge(seer_2km, wtp_hh_offset, by='new2kid')
+## 1.4. Offset locations, max ecosystem services
+## ---------------------------------------------
+max_es_offset <- read.csv('max_es_offset_urban_sprawl.csv')
+max_es_offset <- merge(seer_2km, max_es_offset, by='new2kid')
 
-## 1.5. Offset locations, max population WTP
-## ----------------------------------------
-wtp_pop_offset <- read.csv('wtp_pop_offset.csv')
-wtp_pop_offset <- merge(seer_2km, wtp_pop_offset, by='new2kid')
+## 1.5. Offset locations, equity weighted recreation
+## -------------------------------------------------
+rec_mui_offset <- read.csv('max_rec_offset_urban_sprawl_equity_weighted.csv')
+rec_mui_offset <- merge(seer_2km, rec_mui_offset, by='new2kid')
 
-## 1.6. Offset locations, max household WTP, equity weighted
-## ---------------------------------------------------------
-wtp_hh_mui_offset <- read.csv('wtp_hh_mui_offset.csv')
-wtp_hh_mui_offset <- merge(seer_2km, wtp_hh_mui_offset, by='new2kid')
+## 1.5. Offset locations, equity weighted recreation
+## -------------------------------------------------
+min_cost_offset <- read.csv('min_cost_offset_urban_sprawl_2031.csv')
+min_cost_offset <- merge(seer_2km, min_cost_offset, by='new2kid')
 
-## 1.7. Offset locations, max population WTP, equity weighted
-## ----------------------------------------------------------
-wtp_pop_mui_offset <- read.csv('wtp_pop_mui_offset.csv')
-wtp_pop_mui_offset <- merge(seer_2km, wtp_pop_mui_offset, by='new2kid')
 
 ## (2) MAPS
 ## ========
@@ -81,20 +91,9 @@ wtp_pop_mui_offset <- merge(seer_2km, wtp_pop_mui_offset, by='new2kid')
 ## 2.1. Offset locations, local offset
 ## -----------------------------------
 df <- local_bio_offset
-df$local_offset <- df$local_offset / 1e4
-# low_bound <- round(min(df$local_offset[df$local_offset > 0], na.rm = TRUE), 0)
-# high_bound <- round(max(df$local_offset, na.rm = TRUE), 0)
-# classes <- c(low_bound, 2.5, 5, 10, 25, 50, 100, 150, 200, 400)
-# plt <- fcn_plt_map(data = df, 
-#                    column_name = 'local_offset', 
-#                    classes = classes,
-#                    plot_title = 'Local biodiversity offset', 
-#                    legend_title = 'Offset area',
-#                    plot_legend = 'bottom', 
-#                    scale = 'viridis', 
-#                    direction = -1)
-local_bio <- fcn_continuous_plot(plot_data = df[df$local_offset > 0,], 
-                                 column = 'local_offset', 
+
+local_bio <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
+                                 column = 'offset_area_ha', 
                                  limits = c(0, 300),
                                  plot_title = 'a', 
                                  legend_title = '',
@@ -105,9 +104,9 @@ local_bio <- fcn_continuous_plot(plot_data = df[df$local_offset > 0,],
 ## 2.2. Offset locations, max biodiversity gains
 ## ---------------------------------------------
 df <- max_bio_offset
-df$max_bio_offset <- df$max_bio_offset / 1e4
-max_bio <- fcn_continuous_plot(plot_data = df[df$max_bio_offset > 0,], 
-                               column = 'max_bio_offset', 
+
+max_bio <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
+                               column = 'offset_area_ha', 
                                limits = c(0, 300),
                                plot_title = 'b', 
                                legend_title = 'Offset area',
@@ -117,12 +116,11 @@ max_bio <- fcn_continuous_plot(plot_data = df[df$max_bio_offset > 0,],
 
 ## 2.3. Offset locations, max household WTP
 ## ----------------------------------------
-df <- wtp_hh_offset
-df$wtp_hh_offset <- df$wtp_hh_offset / 1e4
-wtp_hh <- fcn_continuous_plot(plot_data = df[df$wtp_hh_offset > 0,], 
-                              column = 'wtp_hh_offset', 
+df <- max_es_offset
+max_es <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
+                              column = 'offset_area_ha', 
                               limits = c(0, 300),
-                              plot_title = 'Max household WTP offset', 
+                              plot_title = 'c - max es',
                               legend_title = 'Offset area',
                               legend_position = 'none', 
                               scale = 'viridis', 
@@ -131,58 +129,89 @@ wtp_hh <- fcn_continuous_plot(plot_data = df[df$wtp_hh_offset > 0,],
 
 ## 2.4. Offset locations, max population WTP
 ## -----------------------------------------
-df <- wtp_pop_offset
-df$wtp_pop_offset <- df$wtp_pop_offset / 1e4
-wtp_pop <- fcn_continuous_plot(plot_data = df[df$wtp_pop_offset > 0,], 
-                               column = 'wtp_pop_offset', 
+df <- rec_mui_offset
+
+rec_mui <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
+                               column = 'offset_area_ha', 
                                limits = c(0, 300),
-                               plot_title = 'c', 
+                               plot_title = 'd', 
                                legend_title = 'Offset area',
                                legend_position = 'none', 
                                scale = 'viridis', 
                                direction = -1)
 
-## 2.5. Offset locations, max household WTP, equity weighted
-## ---------------------------------------------------------
-df <- wtp_hh_mui_offset
-df$wtp_hh_mui_offset <- df$wtp_hh_mui_offset / 1e4
-wtp_hh_mui <- fcn_continuous_plot(plot_data = df[df$wtp_hh_mui_offset > 0,], 
-                                  column = 'wtp_hh_mui_offset', 
-                                  limits = c(0, 300),
-                                  plot_title = 'Max household WTP offset\nequity weighted', 
-                                  legend_title = 'Offset area',
-                                  legend_position = 'none', 
-                                  scale = 'viridis', 
-                                  direction = -1)
 
-## 2.6. Offset locations, max population WTP, equity weighted
-## ----------------------------------------------------------
-df <- wtp_pop_mui_offset
-df$wtp_pop_mui_offset <- df$wtp_pop_mui_offset / 1e4
-wtp_pop_mui <- fcn_continuous_plot(plot_data = df[df$wtp_pop_mui_offset > 0,], 
-                                   column = 'wtp_pop_mui_offset', 
-                                   limits = c(0, 300),
-                                   plot_title = 'd', 
-                                   legend_title = 'Offset area',
-                                   legend_position = 'none', 
-                                   scale = 'viridis', 
-                                   direction = -1)
-
-
-# figure <- grid.arrange(local_bio, max_bio,  wtp_hh, wtp_pop, wtp_hh_mui, wtp_pop_mui,
-#                        layout_matrix = rbind(c(1, 2, 3), c(4, 5, 6)))
-
-figure <- ggarrange(local_bio, max_bio,  wtp_pop, wtp_pop_mui, 
+figure <- ggarrange(local_bio, max_bio,  max_es, rec_mui, 
                     ncol = 2, nrow = 2,
                     common.legend = TRUE,
-                    legend = 'bottom')
+                    legend = 'bottom') + 
+  bgcolor("white")     
+
+## 2.5. Offset locations, min cost
+## -------------------------------
+df <- min_cost_offset
+
+min_cost <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
+                               column = 'offset_area_ha', 
+                               limits = c(0, 300),
+                               plot_title = 'e', 
+                               legend_title = 'Offset area',
+                               legend_position = 'none', 
+                               scale = 'viridis', 
+                               direction = -1)
+
+
+## 2.5. facet plots
+## ----------------
+
+figure <- ggarrange(local_bio, max_bio,  max_es, rec_mui, min_cost, 
+                    ncol = 2, nrow = 3,
+                    common.legend = TRUE,
+                    legend = 'bottom') + 
+  bgcolor("white") + 
+  border("white")
 
 # plot_title <- 'Locations for biodiversity offsetting of new housing developments'
 # figure <- annotate_figure(figure, 
 #                           top = text_grob(plot_title, color = "black", face = "bold", size = 32))
-save_path <- 'D:/Documents/NetGain/Maps/'
-filename <- 'biodiversity_offset_locations_deltabirds_Nature.jpeg'
+save_path <- paste0(gitpath,'Output/Maps/')
+filename <- 'biodiversity_offset_locations_all.jpeg'
 ggsave(filename=filename, plot = figure, device = "jpeg",
-       path = save_path, units = "in", width = 12, height = 16)
+       path = save_path, units = "in", width = 12, height = 16) 
 
+# Note: unable to add black box to the colour bar 
+# https://stackoverflow.com/questions/50070741/draw-border-around-legend-continuous-gradient-color-bar-of-heatmap 
 
+## 2.6. max recreation
+## -------------------
+rec_offset <- read.csv('max_rec_offset_urban_sprawl.csv')
+rec_offset <- merge(seer_2km, rec_offset, by='new2kid')
+
+df <- rec_offset
+
+max_rec <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
+                                column = 'offset_area_ha', 
+                                limits = c(0, 300),
+                                plot_title = 'f - max recreation', 
+                                legend_title = 'Offset area',
+                                legend_position = 'none', 
+                                scale = 'viridis', 
+                                direction = -1)
+
+## 2.7. facet plots
+## ----------------
+
+figure <- ggarrange(local_bio, max_bio,  max_es, rec_mui, min_cost, max_rec,
+                    ncol = 2, nrow = 3,
+                    common.legend = TRUE,
+                    legend = 'bottom') + 
+  bgcolor("white") + 
+  border("white")
+
+# plot_title <- 'Locations for biodiversity offsetting of new housing developments'
+# figure <- annotate_figure(figure, 
+#                           top = text_grob(plot_title, color = "black", face = "bold", size = 32))
+save_path <- paste0(gitpath,'Output/Maps/')
+filename <- 'biodiversity_offset_locations_max_rec_comp.jpeg'
+ggsave(filename=filename, plot = figure, device = "jpeg",
+       path = save_path, units = "in", width = 12, height = 16) 
