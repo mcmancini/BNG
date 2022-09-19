@@ -93,8 +93,8 @@ parameters.options = {'arable2sng', 'arable2wood', 'arable2urban', 'arable2mixed
 model_flags.run_ag_toplevel   = true;
 model_flags.run_ghg           = true;
 model_flags.run_forestry      = true;
-model_flags.run_biodiversity  = true;
-model_flags.run_hydrology     = true;
+model_flags.run_biodiversity  = false;
+model_flags.run_hydrology     = false;
 model_flags.run_recreation    = true;
 
 
@@ -122,7 +122,7 @@ parameters.base_ceh_lcm = base_ceh_lcm;
 % scenario_lu.farm_ha = zeros(height(scenario_lu), 1);
 scenario_lu = baseline_lu;
 landuse_data_path = 'D:\Documents\GitHub\BNG\Output\';
-scenario_lu_eng = readtable(strcat(landuse_data_path, 'max_es_offset_urban_sprawl_scc.csv'));
+scenario_lu_eng = readtable(strcat(landuse_data_path, 'max_es_offset_urban_sprawl.csv'));
 scenario_lu_eng.offset_area_ha = [];
 [~, idx] = ismember(scenario_lu.Properties.VariableNames, scenario_lu_eng.Properties.VariableNames); 
 scenario_lu_eng = scenario_lu_eng(:,idx);
