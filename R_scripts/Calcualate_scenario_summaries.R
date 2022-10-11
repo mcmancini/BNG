@@ -35,8 +35,8 @@ library(ggpubr)       # annotate_figure
 # source('D:\Documents\GitHub\BNG\R_scripts/Functions/fcn_plt_map.R')
 
 #update path for different machines 
-gitpath <- "D:/Documents/GitHub/BNG/"
-datapath <- "D:/Documents/Data/BNG/"
+gitpath <- "C:/Users/Rebecca/Documents/GitHub/BNG/"
+datapath <- "C:/Users/Rebecca/Documents/Data/BNG/"
 
 ## =============================================================================
 ## (1) Load the data

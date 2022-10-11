@@ -32,7 +32,7 @@ fcn_plt_map <- function(data,
                         plot_legend, 
                         scale, 
                         direction){
-  eng_border <- st_read("C:/Code/BNG/R_scripts/Functions/england_full_clipped.shp")
+  eng_border <- st_read("C:/Users/Rebecca/Documents/GitHub/BNG/R_scripts/Functions/england_full_clipped.shp")
   # df <- data[, c('new2kid', column_name)]
   df <- data
   
@@ -65,7 +65,7 @@ fcn_plt_map <- function(data,
                  include.lowest = T)
   
   plt <- ggplot() +
-    geom_sf(data = eng_border, fill = 'grey', lwd = 0.8) +
+    geom_sf(data = eng_border, fill = 'grey85', lwd = 0.8) +
     geom_sf(data = df, 
             aes(fill = bins), 
             color = NA) +
@@ -104,14 +104,14 @@ fcn_continuous_plot <- function(plot_data,
                                 scale, 
                                 direction) {
   df <- plot_data
-  eng_border <- st_read("C:/Code/BNG/R_scripts/Functions/england_full_clipped.shp")
+  eng_border <- st_read("C:/Users/Rebecca/Documents/GitHub/BNG/R_scripts/Functions/england_full_clipped.shp")
 
   formatLabel <- function(x) format(round(x, 3), nsmall = 2)
   formatIntegers <- function(x) format(x, scientific = 999)
   labels = parse(text=paste(seq(0, 300, 100), "~ha"))
   
   plot <- ggplot() +
-    geom_sf(data = eng_border, fill = 'grey', lwd = 0.8) +
+    geom_sf(data = eng_border, fill = 'grey85', lwd = 0.8) +
     geom_sf(data = df,
             aes(fill = get(column), color = get(column))) +
     scale_fill_viridis(legend_title, 
@@ -152,13 +152,13 @@ fcn_change_plot <- function(plot_data,
                             plot_title, 
                             legend_title, 
                             legend_position) {
-  eng_border <- st_read("C:/Code/BNG/R_scripts/Functions/england_full_clipped.shp")
+  eng_border <- st_read("C:/Users/Rebecca/Documents/GitHub/BNG/R_scripts/Functions/england_full_clipped.shp")
   
   formatLabel <- function(x) format(round(x, 3), nsmall = 2)
   formatIntegers <- function(x) format(x, scientific = 999)
 
   plot <- ggplot() +
-    geom_sf(data = eng_border, fill = 'grey', lwd = 0.8) +
+    geom_sf(data = eng_border, fill = 'grey85', lwd = 0.8) +
     geom_sf(data = plot_data,
             aes(fill = get(column), color = get(column))) +
     scale_fill_gradient2(low = 'red3',
