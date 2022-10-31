@@ -70,7 +70,7 @@ fcn_plt_map <- function(data,
                  include.lowest = T)
   
   plt <- ggplot() +
-    geom_sf(data = eng_border, fill = border_col, colour = border_col, lwd = 5) +
+    geom_sf(data = eng_border, fill = border_col, colour = border_col, lwd = 3) +
     geom_sf(data = eng_border, fill = 'grey85', colour = 'grey85', lwd = 1) +
     geom_sf(data = df, 
             aes(fill = bins), 
@@ -118,7 +118,7 @@ fcn_continuous_plot <- function(plot_data,
   labels = parse(text=paste(seq(0, 300, 100), "~ha"))
   
   plot <- ggplot() +
-    geom_sf(data = eng_border, fill = border_col, colour = border_col, lwd = 5) +
+    geom_sf(data = eng_border, fill = border_col, colour = border_col, lwd = 3) +
     geom_sf(data = eng_border, fill = 'grey85', colour = 'grey85', lwd = 0.8) +
     geom_sf(data = df,
             aes(fill = get(column), color = get(column))) +
@@ -127,7 +127,15 @@ fcn_continuous_plot <- function(plot_data,
                        option = scale, 
                        limits = limits, 
                        discrete = FALSE,
-                       direction = direction) +
+                       direction = direction, 
+                       guide = guide_colourbar(frame.colour = "black", 
+                                               ticks.colour = "black",
+                                               title.position = "top",
+                                               title.theme = element_text(size = 8), 
+                                               label.position = "bottom", 
+                                               label.theme = element_text(angle = 0, vjust = 0, hjust=0, size = 8),
+                                               barwidth = unit(40, units ="mm"),
+                                               barheight = unit(5, units ="mm"))) +
     scale_color_viridis(legend_title, 
                         labels = labels, 
                         option = scale, 
@@ -145,8 +153,9 @@ fcn_continuous_plot <- function(plot_data,
           axis.text.y = element_text(size = 11),
           legend.text = element_text(size = 11),
           legend.title = element_text(size = 11, hjust = 0.5),
-          legend.position = legend_position, 
-          legend.key.width=unit(1.5,"in"))
+          legend.position = legend_position)  
+          # legend.key.height=unit(5,"mm"),
+          # legend.key.width = unit(30, "mm"))
     
   
   return(plot)
@@ -165,7 +174,7 @@ fcn_change_plot <- function(plot_data,
   formatIntegers <- function(x) format(x, scientific = 999)
 
   plot <- ggplot() +
-    geom_sf(data = eng_border, fill = border_col, colour = border_col, lwd = 5) +
+    geom_sf(data = eng_border, fill = border_col, colour = border_col, lwd = 3) +
     geom_sf(data = eng_border, fill = 'grey85', colour = 'grey85', lwd = 1) +
     geom_sf(data = plot_data,
             aes(fill = get(column), color = get(column))) +

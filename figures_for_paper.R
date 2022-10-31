@@ -80,8 +80,9 @@ max_bio_offset <- merge(seer_2km, max_bio_offset, by='new2kid')
 
 ## 1.4. Offset locations, max ecosystem services
 ## ---------------------------------------------
-max_es_offset <- read.csv('max_es_offset_urban_sprawl.csv')
-max_es_offset <- merge(seer_2km, max_es_offset, by='new2kid')
+# max_bio_offset <- read.csv('max_bio_offset_urban_sprawl_2031.csv') # all services 
+max_bio_offset <- read.csv('max_es_rec_ghg_only_offset_urban_sprawl_scc.csv') # flooding and water quality excluded
+max_bio_offset <- merge(seer_2km, max_bio_offset, by='new2kid')
 
 ## 1.5. Offset locations, equity weighted recreation
 ## -------------------------------------------------
@@ -99,7 +100,15 @@ min_cost_offset <- merge(seer_2km, min_cost_offset, by='new2kid')
 
 ## 2.1. Offset locations, local offset
 ## -----------------------------------
+
 coul <-viridis(5,option = "viridis",) 
+
+library(RColorBrewer)
+display.brewer.all(colorblindFriendly = TRUE)
+coul <- brewer.pal(5, "Dark2") # Set2 is okay 
+
+
+source(paste0(gitpath, '/R_scripts/Functions/fcn_plt_map_coloured_border.R'))
 
 
 df <- local_bio_offset
@@ -107,8 +116,8 @@ df <- local_bio_offset
 local_bio <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
                                  column = 'offset_area_ha', 
                                  limits = c(0, 300),
-                                 plot_title = '', 
-                                 legend_title = 'Offset area',
+                                 plot_title = 'i', 
+                                 legend_title = 'Offset area:',
                                  legend_position = 'bottom', 
                                  scale = 'magma',
                                  border_col = coul[1], 
@@ -125,8 +134,8 @@ df <- max_bio_offset
 max_bio <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
                                column = 'offset_area_ha', 
                                limits = c(0, 300),
-                               plot_title = '', 
-                               legend_title = 'Offset area',
+                               plot_title = 'ii', 
+                               legend_title = 'Offset area:',
                                legend_position = 'none', 
                                scale = 'magma',
                                border_col = coul[2], 
@@ -138,8 +147,8 @@ df <- max_es_offset
 max_es <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
                               column = 'offset_area_ha', 
                               limits = c(0, 300),
-                              plot_title = '',
-                              legend_title = 'Offset area',
+                              plot_title = 'iii',
+                              legend_title = 'Offset area:',
                               legend_position = 'none', 
                               scale = 'magma', 
                               border_col = coul[3], 
@@ -153,8 +162,8 @@ df <- rec_mui_offset
 rec_mui <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
                                column = 'offset_area_ha', 
                                limits = c(0, 300),
-                               plot_title = '', 
-                               legend_title = 'Offset area',
+                               plot_title = 'iv', 
+                               legend_title = 'Offset area:',
                                legend_position = 'none', 
                                scale = 'magma',
                                border_col = coul[4],
@@ -169,8 +178,8 @@ df <- min_cost_offset
 min_cost <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
                                column = 'offset_area_ha', 
                                limits = c(0, 300),
-                               plot_title = '', 
-                               legend_title = 'Offset area',
+                               plot_title = 'v', 
+                               legend_title = 'Offset area:',
                                legend_position = 'none', 
                                scale = 'magma',
                                border_col = coul[5],
@@ -190,13 +199,13 @@ library(ggradar)
 
 # format data 
 
-radar_df_benefits <- all_data %>%
-  dplyr::filter(result_file == "benefits") %>%
-  group_by(scenario) %>%
-  dplyr::summarise(other_ben = (sum(total)-sum(rec)),
-                   tot_rec = sum(rec))
+# radar_df_benefits <- all_data %>%
+#   dplyr::filter(result_file == "benefits") %>%
+#   group_by(scenario) %>%
+#   dplyr::summarise(other_ben = (sum(total)-sum(rec)),
+#                    tot_rec = sum(rec))
 
-radar_df_es_benefits <- all_data %>% 
+radar_df_benefits <- all_data %>% 
   dplyr::filter(result_file == "benefits") %>% 
   group_by(scenario) %>% 
   dplyr::summarise(tot_rec = sum(rec),
@@ -236,7 +245,7 @@ df_scaled <- as.data.frame(cbind(scenario = scenario, df_scaled))
 head(df_scaled)
 
 # Set graphic colors
-coul <-viridis(5,option = "viridis",) 
+# coul <-viridis(5,option = "viridis",) 
 colors_border <- coul
 colors_in <- alpha(coul,0.8)
 
@@ -252,33 +261,34 @@ radar <- ggradar(df_scaled,
                  label.gridline.mid = FALSE,
                  label.gridline.max = FALSE,
                  # axis labels customization
-                 axis.labels = c("Net benefit", "Recreation", "Biodiversity", "Cost"),
+                 # axis.labels = c("Net benefit", "Recreation", "Biodiversity", "Cost"),
+                 axis.labels = c("Max. recreation", "Max. GHG removal", "Max. flood risk reduction", "Max. water quality", "Max. biodiversity gain", "Min. food reduction"), 
                  axis.label.offset = 1.05,
-                 axis.label.size = 4,
+                 axis.label.size = 3,
                  # line and point customization
                  group.point.size = 0, 
                  group.colours = colors_border,
                  group.line.width = 0.9,
                  # legend customization
-                 legend.title = "BNG policy",
+                 legend.title = "BNG policy:",
                  # plot.legend = FALSE
 ) +
   theme(
     # Legend title and text labels
     #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     # Title font color size and face
-    legend.title = element_text(size = 11, hjust = 0.5),
+    legend.title = element_text(size = 8, hjust = 0.5),
     # Title alignment. Number from 0 (left) to 1 (right)
     legend.title.align = NULL,
     # Text label font color size and face
-    legend.text = element_text(size = 11),
+    legend.text = element_text(size = 8),
     # Text label alignment. Number from 0 (left) to 1 (right)
     legend.text.align = 0,
     
     # Legend position, margin and background
     #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     # Legend position: right, left, bottom, top, none
-    legend.position = "right", 
+    legend.position = "bottom", 
     # Margin around each legend
     legend.margin = margin(0.2, 0.2, 0.2, 0.2, "cm"),
     
@@ -292,7 +302,7 @@ radar <- ggradar(df_scaled,
     
     # Spacing between legends. 
     #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    legend.spacing = unit(0.4, "cm"), 
+    # legend.spacing = unit(0.1, "cm"),
     legend.spacing.x = NULL,                 # Horizontal spacing
     legend.spacing.y = NULL,                 # Vertical spacing
     
@@ -311,10 +321,11 @@ radar <- ggradar(df_scaled,
     plot.title = element_text(size = 11, hjust = 0, face = "bold")
     
   ) + 
-  guides(colour = guide_legend(title.position="left", title.hjust = 0.5)) + 
+  guides(colour = guide_legend(title.position="left", title.hjust = 0.1)) + 
   ggtitle("") 
 
 radar
+
 
 ## ==============
 ## (4) Bar charts
@@ -404,6 +415,7 @@ total_sp_rich <- all_data %>%
 
 total_sp_rich_sum_tbl <- total_sp_rich %>%
   filter(hectares_chg > 0) %>% 
+  group_by(scenario) %>% 
   summarise(sr_chg = mean(sr_chg),
             sr_perc_chg = mean(sr_perc_chg),
             sr = mean(scen_bio), 
@@ -439,13 +451,13 @@ dat <- benefits %>%
 ## 4.3 Plot barcharts 
 ## ------------------
 
-coul <-viridis(5,option = "viridis",) 
+# coul <-viridis(5,option = "viridis",) 
 colors_border <- coul
 
 #define hlines 
 BNG_threshold <- 10
 
-I <- dat %>% 
+III <- dat %>% 
   filter(benefit == "sr_perc_chg") %>% 
   mutate(value = value*100) %>%  
   ggplot(aes(x = reorder(BNG.policy.option, desc(BNG.policy.option)), y = value, fill = BNG.policy.option)) + 
@@ -453,127 +465,75 @@ I <- dat %>%
   # annotate("text", x = "Option 4", y = BNG_threshold, label = "10% BNG threshold", vjust = 0, hjust = 1.1, col = "red") + 
   # geom_hline(aes(yintercept = BNG_threshold),linetype = 'dashed', col = 'red') + 
   coord_flip() +
-    ylab("Change in species richness (%)") + 
+    ylab("Species richness change (%)") + 
   xlab("") + 
-  ggtitle("a") +
+  ggtitle("iii") +
   scale_fill_manual(values = colors_border ) + 
+  scale_y_continuous(n.breaks = 6) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
+        legend.position="right", 
+        axis.text.y = element_text(colour = "black"),
+        plot.title = element_text(size = 11, face = "bold"),
+        axis.title = element_text(size = 9)) 
+
+I <- dat %>% 
+  filter(benefit == "net_ben") %>% 
+  mutate(value = value/1000000000) %>%  
+  ggplot(aes(x = reorder(BNG.policy.option, desc(BNG.policy.option)), y = value, fill = BNG.policy.option)) +  
+  geom_bar(stat = "identity", colour = NA) +
+  coord_flip() +
+  ylab("Net benefit (£ billion)") + 
+  xlab("") + 
+  ggtitle("i") +
+  scale_fill_manual(values = colors_border ) +
+  scale_y_continuous(n.breaks = 6) + # use labels to redefine 
   theme_bw() +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
         legend.position="none", 
-        plot.title = element_text(size = 11, face = "bold")) 
+        axis.text.y = element_text(colour = "black"),
+        plot.title = element_text(size = 11, face = "bold"),
+        axis.title = element_text(size = 9)) 
 
 II <- dat %>% 
-  filter(benefit == "net_ben") %>% 
-  ggplot(aes(x = reorder(BNG.policy.option, desc(BNG.policy.option)), y = value, fill = BNG.policy.option)) +  
-  geom_bar(stat = "identity", colour = NA) +
-  coord_flip() +
-  ylab("Net benefit (£)") + 
-  xlab("") + 
-  ggtitle("b") +
-  scale_fill_manual(values = colors_border ) + 
-  theme_bw() +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
-        legend.position="none", 
-        plot.title = element_text(size = 11, face = "bold")) 
-
-III <- dat %>% 
   filter(benefit == "total_rec") %>% 
+  mutate(value = value/1000000) %>%  
   ggplot(aes(x = reorder(BNG.policy.option, desc(BNG.policy.option)), y = value, fill = BNG.policy.option)) +  
   geom_bar(stat = "identity", colour = NA) +
   coord_flip() +
-  ylab("Recreation (£)") + 
+  ylab("Recreation benefit (£ million)") + 
   xlab("") + 
-  ggtitle("c") +
+  ggtitle("ii") +
   scale_fill_manual(values = colors_border ) + 
+  scale_y_continuous(n.breaks = 6) + # use labels to redefine 
   theme_bw() +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
         legend.position="none",
-        plot.title = element_text(size = 11, face = "bold")) 
+        axis.text.y = element_text(colour = "black"),
+        plot.title = element_text(size = 11, face = "bold"),
+        axis.title = element_text(size = 9))
 
 IV <- dat %>% 
   filter(benefit == "total_costs") %>% 
+  mutate(value = value/1000000000) %>%  
   ggplot(aes(x = reorder(BNG.policy.option, desc(BNG.policy.option)), y = value, fill = BNG.policy.option)) + 
   geom_bar(stat = "identity", colour = NA) +
   coord_flip() +
-  ylab("Cost (£)") + 
+  ylab("Cost (£ billion)") + 
   xlab("") + 
-  ggtitle("d") +
+  ggtitle("iv") +
   scale_fill_manual(values = colors_border ) + 
+  scale_y_continuous(n.breaks = 6) + # use labels to redefine 
   theme_bw() +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
         legend.position="none",
-        plot.title = element_text(size = 11, face = "bold")) 
+        axis.text.y = element_text(colour = "black"),
+        plot.title = element_text(size = 11, face = "bold"),
+        axis.title = element_text(size = 9)) 
 
 ## ===============
 ## (5) FACET PLOTS
 ## ===============
-
-
-## 5.1 Maps
-## --------
-maps <- ggarrange(local_bio, max_bio,  max_es, rec_mui, min_cost, 
-                  ncol = 5, nrow = 1,
-                  common.legend = TRUE,
-                  legend = 'bottom') + 
-  bgcolor("white") + 
-  border("white")
-
-# Note: unable to add black box to the colour bar 
-# https://stackoverflow.com/questions/50070741/draw-border-around-legend-continuous-gradient-color-bar-of-heatmap 
-
-## 5.2 Barcharts
-## -------------
-
-barcharts <- ggarrange(I, II, III, IV, 
-                      ncol = 2, nrow = 2,
-                      common.legend = TRUE,
-                      legend = 'none') + 
-  bgcolor("white") + 
-  border("white")
-
-save_path <- paste0(gitpath,'Output/Figures/')
-filename <- 'biodiversity_offset_locations_benefits_chart.jpeg'
-ggsave(filename=filename, plot = barcharts, device = "jpeg",
-       path = save_path) 
-
-## 5.2 Barcharts and radar
-## -----------------------
-
-bar_radar <- ggarrange(radar, barcharts, 
-                       ncol = 2, nrow = 1,
-                       common.legend = TRUE,
-                       legend = 'top') + 
-  bgcolor("white") + 
-  border("white")
-
-## 5.3 all
-## -----------------------
-
-figure <- ggarrange(maps, bar_radar, 
-                    ncol = 1, nrow = 2,
-                    common.legend = TRUE,
-                    legend = 'none') + 
-  bgcolor("white") + 
-  border("white")
-
-save_path <- paste0(gitpath,'Output/Maps/')
-filename <- 'biodiversity_offset_locations_with_radar_bars.jpeg'
-ggsave(filename=filename, plot = figure, device = "jpeg",
-       path = save_path, units = "in", height = 12, width = 16) 
-
-# Note: unable to add black box to the colour bar 
-# https://stackoverflow.com/questions/50070741/draw-border-around-legend-continuous-gradient-color-bar-of-heatmap 
-
-## 5.4 Maps and radar only
-## -----------------------
-
-maps_radar <- ggarrange(local_bio, max_bio,  max_es, rec_mui, min_cost, radar,
-                  ncol = 2, nrow = 3,
-                  common.legend = FALSE,
-                  legend = 'none', 
-                  labels = c("a", "b", "c", "d", "e", "f")) + 
-  bgcolor("white") + 
-  border("white")
 
 # extract the legends - common legends does not work to extract the policy colours and the density 
 # https://www.geeksforgeeks.org/add-common-legend-to-combined-ggplot2-plots-in-r/ 
@@ -595,22 +555,93 @@ get_only_legend <- function(plot) {
 
 radar_legend <- get_only_legend(radar)
 maps_legend <- get_only_legend(local_bio)
+# bar_legend <- get_only_legend(I)
 
 
-figure.2 <- grid.arrange(maps_radar, radar_legend, maps_legend, nrow = 3, heights = c(10, 0.5, 0.5))
+## 5.1 Maps
+## --------
+maps <- ggarrange(local_bio, max_bio,  max_es, rec_mui, min_cost,
+                  ncol = 1, nrow = 5,  
+                  common.legend = TRUE,
+                  legend = 'none') + 
+  bgcolor("white") + 
+  border("white")
+
+maps_with_legend <- ggarrange(maps, maps_legend, 
+                  ncol = 1, nrow = 2, 
+                  heights =  c(1, 0.1))
+
+# Note: unable to add black box to the colour bar 
+# https://stackoverflow.com/questions/50070741/draw-border-around-legend-continuous-gradient-color-bar-of-heatmap 
 
 save_path <- paste0(gitpath,'Output/Maps/')
-filename <- 'biodiversity_offset_locations_with_radar.jpeg'
-ggsave(filename=filename, plot = figure.2, device = "jpeg",
-       path = save_path, units = "in", height = 16, width = 12) 
+filename <- 'facet_maps.jpeg'
+ggsave(filename=filename, plot = maps_with_legend, device = "jpeg",
+       path = save_path, units = "mm", height = 200, width = 61) 
 
-## 5.5 Portrait all figures
+## 5.2 Barcharts
+## -------------
+
+barcharts <- ggarrange(I, II, III, IV, 
+                      ncol = 2, nrow = 2,
+                      common.legend = TRUE,
+                      legend = 'none') + 
+  bgcolor("white") + 
+  border("white")
+
+save_path <- paste0(gitpath,'Output/Figures/')
+filename <- 'biodiversity_offset_locations_benefits_chart.jpeg'
+ggsave(filename=filename, plot = barcharts, device = "jpeg",
+       path = save_path) 
+
+
+## 5.2 Barcharts and radar
+## -----------------------
+
+bar_radar <- ggarrange(radar, barcharts, 
+                       ncol = 1, nrow = 2,
+                       heights = c(1,1), 
+                       common.legend = TRUE,
+                       legend = 'none', 
+                       labels = c("b", "c")) + 
+  bgcolor("white") + 
+  border("white")
+
+
+## 5.3 Maps and radar only
+## -----------------------
+
+# maps_radar <- ggarrange(local_bio, max_bio,  max_es, rec_mui, min_cost, radar,
+#                   ncol = 2, nrow = 3,
+#                   common.legend = FALSE,
+#                   legend = 'none', 
+#                   labels = c("a", "b", "c", "d", "e", "f")) + 
+#   bgcolor("white") + 
+#   border("white")
+# 
+# figure.2 <- grid.arrange(maps_radar, radar_legend, maps_legend, nrow = 3, heights = c(10, 0.5, 0.5))
+# 
+# save_path <- paste0(gitpath,'Output/Maps/')
+# filename <- 'biodiversity_offset_locations_with_radar.jpeg'
+# ggsave(filename=filename, plot = figure.2, device = "jpeg",
+#        path = save_path, units = "in", height = 16, width = 12) 
+
+## 5.4 Portrait all figures
 ## ------------------------
 
-figure.3 <- grid.arrange(maps_radar, maps_legend, barcharts, radar_legend, nrow = 4, heights = c(10, 0.5, 5, 0.5))
+all_portrait <- ggarrange(maps_with_legend, bar_radar, 
+                         ncol = 2, nrow = 1,
+                         heights = c(1),
+                         widths = c(0.5, 1),
+                         labels = c("a","")) 
+
+all_portrait_legends <- ggarrange(all_portrait, radar_legend, 
+                                  ncol = 1, nrow = 2, 
+                                  heights = c(1, 0.1))
 
 save_path <- paste0(gitpath,'Output/Maps/')
 filename <- 'biodiversity_offset_locations_with_radar_bars_portrait.jpeg'
-ggsave(filename=filename, plot = figure.3, device = "jpeg",
-       path = save_path, units = "in", height = 16, width = 12) 
+ggsave(filename=filename, plot = all_portrait_legends, device = "jpeg",
+       path = save_path, units = "mm", height = 200, width = 183) 
+# max height = 247 mm
 

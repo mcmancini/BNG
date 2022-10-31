@@ -26,8 +26,9 @@ library(gridExtra)    # grid_arrange
 library(ggpubr)       # annotate_figure
 
 #update path for different machines 
-gitpath <- "C:/Code/BNG/" 
-datapath <- "C:/Data/BNG/"
+gitpath <- "C:/Users/Rebecca/Documents/GitHub/BNG/" 
+datapath <- "C:/Users/Rebecca/OneDrive - University of Exeter/Data/BNG/"
+
 
 source(paste0(gitpath, '/R_scripts/Functions/fcn_plt_map.R'))
 
@@ -58,6 +59,12 @@ df <- dbGetQuery(conn, "SELECT * FROM regions_keys.key_grid_countries_england")
 cell_id <- df$new2kid
 seer_2km <- seer_2km[seer_2km$new2kid %in% cell_id, 'new2kid']
 
+# Alternative when not on the network 
+# Eng_2kid <- read.csv(paste0(gitpath, "Output/England_new_2kid.csv"))
+# 
+# seer_2km <- seer_2km %>% 
+#   dplyr::filter(new2kid %in% Eng_2kid$new2kid)
+
 ## 1.2. Offset locations, local offset
 ## -----------------------------------
 setwd(paste0(gitpath,'Output/'))
@@ -66,7 +73,8 @@ local_bio_offset <- merge(seer_2km, local_bio_offset, by='new2kid')
 
 ## 1.3. Offset locations, max biodiversity gains
 ## ---------------------------------------------
-max_bio_offset <- read.csv('max_bio_offset_urban_sprawl_2031.csv')
+max_bio_offset <- read.csv('max_bio_offset_urban_sprawl_2031.csv') # all services
+# max_bio_offset <- read.csv('max_es_rec_ghg_only_offset_urban_sprawl_scc.csv') # flooding and water quality excluded
 max_bio_offset <- merge(seer_2km, max_bio_offset, by='new2kid')
 
 ## 1.4. Offset locations, max ecosystem services

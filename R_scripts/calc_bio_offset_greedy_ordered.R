@@ -22,10 +22,11 @@ rm(list=ls())
 library(sf)
 library(dplyr)
 library(RPostgres)
+library(tidyr)
 
 #update path for different machines 
-gitpath <- "D:/Documents/GitHub/BNG/" 
-datapath <- "D:/Documents/Data/BNG/"
+gitpath <- "C:/Users/Rebecca/Documents/GitHub/BNG/" 
+datapath <- "C:/Users/Rebecca/OneDrive - University of Exeter/Data/BNG/"
 
 ## (1) LOAD THE DATA AND PREPROCESS IT
 ##     - 1. SEER 2km grid
@@ -50,6 +51,12 @@ conn <- dbConnect(Postgres(),
 df <- dbGetQuery(conn, "SELECT * FROM regions_keys.key_grid_countries_england")
 cell_id <- df$new2kid
 seer_2km <- seer_2km[seer_2km$new2kid %in% cell_id, 'new2kid']
+
+# Alternative when not on the network 
+Eng_2kid <- read.csv(paste0(gitpath, "Output/England_new_2kid.csv"))
+
+seer_2km <- seer_2km %>% 
+  dplyr::filter(new2kid %in% Eng_2kid$new2kid)
 
 ## 1.2. New housing locations
 ## --------------------------
@@ -360,8 +367,13 @@ max_es_offset$max_es_offset <- 0
 
 # Load ecosystem service data
 setwd(paste0(gitpath,'Output/'))
-max_es <- read.csv('all_farm2mixed_tot_es_sprawl_2031_scc.csv')[, c('new2kid',
-                                                                   'tot_es_ha')]
+
+max_es <-  read.csv('all_farm2mixed_all_es_sprawl_2031.csv') %>% 
+  dplyr::mutate(tot_es = (rec + ghg), 
+                tot_es_ha = (tot_es/hectares_chg)) %>% 
+  dplyr::select(new2kid, tot_es, tot_es_ha)
+
+# max_es <- read.csv('all_farm2mixed_tot_es_sprawl_2031.csv')[, c('new2kid','tot_es_ha')]
 
 max_es$tot_es_ha[is.na(max_es$tot_es_ha)] <- 0
 
@@ -434,7 +446,7 @@ max_es_offset_ha %>%
 
 #save 
 setwd(paste0(gitpath,"Output/"))
-st_write(max_es_offset_ha, 'max_es_offset_urban_sprawl_scc.csv')
+st_write(max_es_offset_ha, 'max_es_rec_ghg_only_offset_urban_sprawl.csv')
 
 
 ## 2.4. offset based max es, equity weighted for recreation 
