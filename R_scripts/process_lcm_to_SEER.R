@@ -33,9 +33,9 @@ options(future.globals.maxSize= 128849018880)
 
 ## (1) INPUT SPECIFICATION
 ## =======================
-lcm_year <- 2020
-lcm_folder <- paste('D:/Documents/OneDrive - University of Exeter/Github/BNG/Data/LCM/LCM_', lcm_year, "/", sep =  "")
-SEER_folder <- 'D:/Documents/OneDrive - University of Exeter/Github/BNG/Data/SEER_GRID/'
+lcm_year <- 2021
+lcm_folder <- paste('D:/Documents/Data/NERC--Agile-Sprint/Data/LCM/LCM_', lcm_year, "/", sep =  "")
+SEER_folder <- 'D:/Documents/Data/NERC--Agile-Sprint/Data/SEER_GRID/'
 
 ## (2) LOAD THE DATA
 ## =================
@@ -57,8 +57,10 @@ if (lcm_year == 2000){
   lcm_filename <- "gb2019lcm25m.tif"
 } else if (lcm_year == 2020){
   lcm_filename <- "gb2020lcm25m.tif"
+} else if (lcm_year == 2021){
+  lcm_filename <- "lcm-2021-25m/gblcm25m2021.tif"
 } else {
-  stop("Available LCM data only for years 2000, 2007, 2015, 2019, 2020")
+  stop("Available LCM data only for years 2000, 2007, 2015, 2019, 2020, 2021")
 }
 
 # Load LCM
@@ -78,8 +80,10 @@ if (lcm_year == 2000){
   lcm_crop[lcm_crop < 1] <- NA # ~15 minutes to run!
 } else if (lcm_year == 2020){
   lcm_crop[lcm_crop < 1] <- NA # ~15 minutes to run!
+} else if (lcm_year == 2021){
+  lcm_crop[lcm_crop < 1] <- NA # ~15 minutes to run!
 } else {
-  stop("Available LCM data only for years 2000, 2007, 2015, 2019, 2020")
+  stop("Available LCM data only for years 2000, 2007, 2015, 2019, 2020, 2021")
 }
 end_time <- Sys.time()
 end_time - start_time
@@ -109,14 +113,17 @@ if(lcm_year == 2000){
 } else if (lcm_year == 2020){
   lcm_2km <- cbind(seer_2km, as.data.frame(matrix(0, nrow = nrow(seer_2km), ncol = 21)))
   colnames(lcm_2km) <- c('new2kid', c(1:21), 'geometry')
+}else if (lcm_year == 2021){
+  lcm_2km <- cbind(seer_2km, as.data.frame(matrix(0, nrow = nrow(seer_2km), ncol = 21)))
+  colnames(lcm_2km) <- c('new2kid', c(1:21), 'geometry')
 } else {
-  stop("Available LCM data only for years 2000, 2007, 2015, 2019, 2020")
+  stop("Available LCM data only for years 2000, 2007, 2015, 2019, 2020, 2021")
 }
 
 # Assign 25m rasters to 2km grid (AAA: 2.8 days!!!!!).I attempted to parallelise
 # the loop using future_lapply in a multisession but on a small sample of data 
 # it was slower than the loop. The advantage of such this loop is that it can be
-# stopped at any time without losing data, and can be started where if was
+# stopped at any time without losing data, and can be started where it was
 # interrupted keeping track of i or counter. Potentially many instances can also 
 # be run on different cores sending subsets of the whole datasets to each 
 # instance (be careful to properly save the processed data in this case)
@@ -146,5 +153,5 @@ end_time <- Sys.time()
 end_time - start_time
 
 # save on disk
-filename <- paste('D:/Documents/OneDrive - University of Exeter/Github/BNG/Data/LCM/LCM_2km/lcm_all_classes_', lcm_year, '.csv', sep="")
+filename <- paste('D:/Documents/Data/NERC--Agile-Sprint/Data/LCM/LCM_2km/lcm_all_classes_', lcm_year, '.csv', sep="")
 st_write(lcm_2km, filename)
