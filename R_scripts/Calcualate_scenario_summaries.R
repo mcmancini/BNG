@@ -35,8 +35,8 @@ library(ggpubr)       # annotate_figure
 # source('D:\Documents\GitHub\BNG\R_scripts/Functions/fcn_plt_map.R')
 
 #update path for different machines 
-gitpath <- "C:/Users/Rebecca/Documents/GitHub/BNG/"
-datapath <- "C:/Users/Rebecca/Documents/Data/BNG/"
+gitpath <- "D:/Documents/GitHub/BNG/"
+datapath <- "D:/Documents/OneDrive - University of Exeter/Data/BNG/"
 
 ## =============================================================================
 ## (1) Load the data
@@ -63,7 +63,7 @@ seer_2km <- seer_2km[seer_2km$new2kid %in% cell_id, 'new2kid']
 # 1.2. Load data from save_output_structure_as_csvs.m 
 # ---------------------------------------------------
 #define file path
-file_path <- paste0(gitpath,"Output/baseline_2031_urbanisation/Offset_outputs/SCC/")
+file_path <- paste0(gitpath,"Output/baseline_2031_urbanisation/Offset_outputs/")
 
 #specify the correct file extension eg .xls .csv .xlsx
 path_files <- dir(file_path, pattern = "*.csv")
@@ -166,8 +166,8 @@ total_benefits <- all_data %>%
   filter(result_file == "benefits") %>% 
   filter(hectares_chg > 0) %>% 
   group_by(scenario) %>% 
-  summarise(total_benefits = sum(total), 
-            total_other_ben = sum(total)-sum(rec), 
+  summarise(total_benefits = sum(ghg_farm) + sum(rec), 
+            total_other_ben = sum(ghg_farm), 
             total_rec = sum(rec))
 
 total_costs <- all_data %>%
@@ -203,7 +203,7 @@ total_sp_rich_sum_tbl <- total_sp_rich %>%
 benefit_table <- full_join(total_benefits, total_costs, by = "scenario") %>% 
   full_join(total_sp_rich_sum_tbl, by = "scenario")
 
-write.csv(benefit_table, paste0(gitpath, "Output/Figures/Scenario_benefits_scc_summary_table.csv"))
+write.csv(benefit_table, paste0(gitpath, "Output/Figures/Scenario_benefits_old_ordering_per_ha_summary_table.csv"))
 
 
 ## =============================================================================

@@ -32,7 +32,7 @@ fcn_plt_map <- function(data,
                         plot_legend, 
                         scale, 
                         direction){
-  eng_border <- st_read("C:/Users/Rebecca/Documents/GitHub/BNG/R_scripts/Functions/england_full_clipped.shp")
+  eng_border <- st_read("D:/Documents/Data/BNG/Data/SEER_GRID/england_full_clipped.shp")
   # df <- data[, c('new2kid', column_name)]
   df <- data
   
@@ -104,7 +104,7 @@ fcn_continuous_plot <- function(plot_data,
                                 scale, 
                                 direction) {
   df <- plot_data
-  eng_border <- st_read("C:/Users/Rebecca/Documents/GitHub/BNG/R_scripts/Functions/england_full_clipped.shp")
+  eng_border <- st_read("D:/Documents/Data/BNG/Data/SEER_GRID/england_full_clipped.shp")
 
   formatLabel <- function(x) format(round(x, 3), nsmall = 2)
   formatIntegers <- function(x) format(x, scientific = 999)
@@ -152,7 +152,7 @@ fcn_change_plot <- function(plot_data,
                             plot_title, 
                             legend_title, 
                             legend_position) {
-  eng_border <- st_read("C:/Users/Rebecca/Documents/GitHub/BNG/R_scripts/Functions/england_full_clipped.shp")
+  eng_border <- st_read("D:/Documents/Data/BNG/Data/SEER_GRID/england_full_clipped.shp")
   
   formatLabel <- function(x) format(round(x, 3), nsmall = 2)
   formatIntegers <- function(x) format(x, scientific = 999)

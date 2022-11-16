@@ -73,7 +73,7 @@ parameters.rain_pct_string                = '50';
 parameters.biodiversity_climate_string    = 'current';
 parameters.other_ha                       = 'baseline'; 
 parameters.landuse_change_timeframe       = 50;    % land use change remains for these numbers of years
-parameters.carbon_price                   = 'scc'; % non_traded_central, scc ...
+parameters.carbon_price                   = 'non_trade_central'; % non_traded_central, scc ...
 
 % 1.2. Model parameters for valuation
 % -----------------------------------
@@ -93,8 +93,8 @@ parameters.options = {'arable2sng', 'arable2wood', 'arable2urban', 'arable2mixed
 model_flags.run_ag_toplevel   = true;
 model_flags.run_ghg           = true;
 model_flags.run_forestry      = true;
-model_flags.run_biodiversity  = false;
-model_flags.run_hydrology     = false;
+model_flags.run_biodiversity  = true;
+model_flags.run_hydrology     = true;
 model_flags.run_recreation    = true;
 
 
@@ -121,8 +121,8 @@ parameters.base_ceh_lcm = base_ceh_lcm;
 % scenario_lu.wood_ha = scenario_lu.wood_ha + 0.5 .* scenario_lu.farm_ha;
 % scenario_lu.farm_ha = zeros(height(scenario_lu), 1);
 scenario_lu = baseline_lu;
-landuse_data_path = 'D:\Documents\GitHub\BNG\Output\';
-scenario_lu_eng = readtable(strcat(landuse_data_path, 'max_es_offset_urban_sprawl.csv'));
+landuse_data_path = 'D:\Documents\GitHub\BNG\Output\new_ordering\per_hectare\';
+scenario_lu_eng = readtable(strcat(landuse_data_path, 'min_cost_offset.csv'));
 scenario_lu_eng.offset_area_ha = [];
 [~, idx] = ismember(scenario_lu.Properties.VariableNames, scenario_lu_eng.Properties.VariableNames); 
 scenario_lu_eng = scenario_lu_eng(:,idx);
@@ -151,14 +151,14 @@ hectares_chg = sum(lu_chg, 2) ./ 2;
 
 %% (4) SAVE THE OUTPUT
 %  ===================
-max_es_offset_urban_sprawl_scc = struct('benefits', benefits, ...
+min_cost_offset = struct('benefits', benefits, ...
                                     'costs', costs, ...
                                     'env_outs', env_outs, ...
                                     'es_outs', es_outs, ...
                                     'hectares_chg', hectares_chg, ...
                                     'new2kid', baseline_lu.new2kid);
                                
-save('Output/max_es_offset_urban_sprawl_scc', 'max_es_offset_urban_sprawl_scc')
+save('Output/new_ordering/per_hectare/min_cost_offset', 'min_cost_offset')
 
 
 %% (5) SCENARIO SPECIFIC OUTPUT

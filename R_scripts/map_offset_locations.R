@@ -26,8 +26,8 @@ library(gridExtra)    # grid_arrange
 library(ggpubr)       # annotate_figure
 
 #update path for different machines 
-gitpath <- "C:/Users/Rebecca/Documents/GitHub/BNG/" 
-datapath <- "C:/Users/Rebecca/OneDrive - University of Exeter/Data/BNG/"
+gitpath <- "D:\\Documents\\GitHub\\BNG\\" 
+datapath <- "D:\\Documents\\OneDrive - University of Exeter\\Data\\BNG\\"
 
 
 source(paste0(gitpath, '/R_scripts/Functions/fcn_plt_map.R'))
@@ -49,7 +49,7 @@ seer_2km <- seer_2km[, "new2kid"]
 
 # filter to England 
 conn <- dbConnect(Postgres(), 
-                  dbname = "NEV",
+                  dbname = "nev",
                   host = "localhost",
                   port = 5432,
                   user="postgres",
@@ -67,29 +67,29 @@ seer_2km <- seer_2km[seer_2km$new2kid %in% cell_id, 'new2kid']
 
 ## 1.2. Offset locations, local offset
 ## -----------------------------------
-setwd(paste0(gitpath,'Output/'))
-local_bio_offset <- read.csv('local_bio_offset_urban_sprawl.csv')
+setwd(paste0(gitpath,'Output/new_ordering/per_hectare/'))
+local_bio_offset <- read.csv('local_bio_offset.csv')
 local_bio_offset <- merge(seer_2km, local_bio_offset, by='new2kid')
 
 ## 1.3. Offset locations, max biodiversity gains
 ## ---------------------------------------------
-max_bio_offset <- read.csv('max_bio_offset_urban_sprawl_2031.csv') # all services
+max_bio_offset <- read.csv('max_bio_offset.csv') # all services
 # max_bio_offset <- read.csv('max_es_rec_ghg_only_offset_urban_sprawl_scc.csv') # flooding and water quality excluded
 max_bio_offset <- merge(seer_2km, max_bio_offset, by='new2kid')
 
 ## 1.4. Offset locations, max ecosystem services
 ## ---------------------------------------------
-max_es_offset <- read.csv('max_es_offset_urban_sprawl.csv')
+max_es_offset <- read.csv('max_es_rec_ghg_only_offset.csv')
 max_es_offset <- merge(seer_2km, max_es_offset, by='new2kid')
 
 ## 1.5. Offset locations, equity weighted recreation
 ## -------------------------------------------------
-rec_mui_offset <- read.csv('max_rec_offset_urban_sprawl_equity_weighted.csv')
+rec_mui_offset <- read.csv('max_equity_offset.csv')
 rec_mui_offset <- merge(seer_2km, rec_mui_offset, by='new2kid')
 
 ## 1.5. Offset locations, equity weighted recreation
 ## -------------------------------------------------
-min_cost_offset <- read.csv('min_cost_offset_urban_sprawl_2031.csv')
+min_cost_offset <- read.csv('min_cost_offset.csv')
 min_cost_offset <- merge(seer_2km, min_cost_offset, by='new2kid')
 
 
@@ -106,7 +106,7 @@ local_bio <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,],
                                  plot_title = 'a', 
                                  legend_title = '',
                                  legend_position = 'bottom', 
-                                 scale = 'viridis', 
+                                 scale = 'magma', 
                                  direction = -1)
 
 ## 2.2. Offset locations, max biodiversity gains
@@ -119,7 +119,7 @@ max_bio <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,],
                                plot_title = 'b', 
                                legend_title = 'Offset area',
                                legend_position = 'none', 
-                               scale = 'viridis', 
+                               scale = 'magma', 
                                direction = -1)
 
 ## 2.3. Offset locations, max household WTP
@@ -131,7 +131,7 @@ max_es <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,],
                               plot_title = 'c - max es',
                               legend_title = 'Offset area',
                               legend_position = 'none', 
-                              scale = 'viridis', 
+                              scale = 'magma', 
                               direction = -1)
 
 
@@ -145,7 +145,7 @@ rec_mui <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,],
                                plot_title = 'd', 
                                legend_title = 'Offset area',
                                legend_position = 'none', 
-                               scale = 'viridis', 
+                               scale = 'magma', 
                                direction = -1)
 
 
@@ -165,7 +165,7 @@ min_cost <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,],
                                plot_title = 'e', 
                                legend_title = 'Offset area',
                                legend_position = 'none', 
-                               scale = 'viridis', 
+                               scale = 'magma', 
                                direction = -1)
 
 
@@ -183,7 +183,7 @@ figure <- ggarrange(local_bio, max_bio,  max_es, rec_mui, min_cost,
 # figure <- annotate_figure(figure, 
 #                           top = text_grob(plot_title, color = "black", face = "bold", size = 32))
 save_path <- paste0(gitpath,'Output/Maps/')
-filename <- 'biodiversity_offset_locations_all.jpeg'
+filename <- 'offsets_new_order_per_hectare.jpeg'
 ggsave(filename=filename, plot = figure, device = "jpeg",
        path = save_path, units = "in", width = 12, height = 16) 
 
@@ -203,7 +203,7 @@ max_rec <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,],
                                 plot_title = 'f - max recreation', 
                                 legend_title = 'Offset area',
                                 legend_position = 'none', 
-                                scale = 'viridis', 
+                                scale = 'magma', 
                                 direction = -1)
 
 ## 2.7. facet plots
