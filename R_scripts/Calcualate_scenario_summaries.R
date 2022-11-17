@@ -166,8 +166,8 @@ total_benefits <- all_data %>%
   filter(result_file == "benefits") %>% 
   filter(hectares_chg > 0) %>% 
   group_by(scenario) %>% 
-  summarise(total_benefits = sum(ghg_farm) + sum(rec), 
-            total_other_ben = sum(ghg_farm), 
+  summarise(total_benefits = sum(ghg_forestry) + sum(rec), 
+            total_other_ben = sum(ghg_forestry), 
             total_rec = sum(rec))
 
 total_costs <- all_data %>%
@@ -203,7 +203,7 @@ total_sp_rich_sum_tbl <- total_sp_rich %>%
 benefit_table <- full_join(total_benefits, total_costs, by = "scenario") %>% 
   full_join(total_sp_rich_sum_tbl, by = "scenario")
 
-write.csv(benefit_table, paste0(gitpath, "Output/Figures/Scenario_benefits_old_ordering_per_ha_summary_table.csv"))
+write.csv(benefit_table, paste0(gitpath, "Output/Figures/Scenario_benefits_summary_table.csv"))
 
 
 ## =============================================================================

@@ -121,7 +121,7 @@ parameters.base_ceh_lcm = base_ceh_lcm;
 % scenario_lu.wood_ha = scenario_lu.wood_ha + 0.5 .* scenario_lu.farm_ha;
 % scenario_lu.farm_ha = zeros(height(scenario_lu), 1);
 scenario_lu = baseline_lu;
-landuse_data_path = 'D:\Documents\GitHub\BNG\Output\new_ordering\per_hectare\';
+landuse_data_path = 'D:\Documents\GitHub\BNG\Output\new_ordering_2\per_hectare\';
 scenario_lu_eng = readtable(strcat(landuse_data_path, 'min_cost_offset.csv'));
 scenario_lu_eng.offset_area_ha = [];
 [~, idx] = ismember(scenario_lu.Properties.VariableNames, scenario_lu_eng.Properties.VariableNames); 
@@ -158,13 +158,13 @@ min_cost_offset = struct('benefits', benefits, ...
                                     'hectares_chg', hectares_chg, ...
                                     'new2kid', baseline_lu.new2kid);
                                
-save('Output/new_ordering/per_hectare/min_cost_offset', 'min_cost_offset')
+save('Output/new_ordering_2/per_hectare/min_cost_offset', 'min_cost_offset')
 
 
-%% (5) SCENARIO SPECIFIC OUTPUT
-%  ============================
-%  CHANGE THIS BASED ON NEEDS
-
+% %% (5) SCENARIO SPECIFIC OUTPUT
+% %  ============================
+% %  CHANGE THIS BASED ON NEEDS
+% 
 % % 5.1. Biodiverity: used for the identification of offset locations that
 % %      maximise biodiversity improvements
 % % ----------------------------------------------------------------------
@@ -173,25 +173,27 @@ save('Output/new_ordering/per_hectare/min_cost_offset', 'min_cost_offset')
 %                                env_outs.bio ./ hectares_chg]);
 % biodiversity_chg = fillmissing(biodiversity_chg, 'constant', 0);
 % biodiversity_chg.Properties.VariableNames = {'new2kid', 'sr_chg_perc', 'sr_chg_ha'};
-% writetable(biodiversity_chg, 'Output/all_farm2mixed_bio_sprawl_2031_scc.csv');
+% writetable(biodiversity_chg, 'Output/farm2mixed_bio.csv');
 % 
 % % 5.2. Ecosystem services: used for the identification of offset locations 
-% %      that maximise ES improvements
+% %      that maximise ES improvements. ES: ghg without avoided farm
+% %      emissions + recreation
 % % ------------------------------------------------------------------------
-% tot_es = sum(es_outs{:,1:5}, 2);
+% tot_es = sum(benefits{:,4:6}, 2);
 % es_chg = array2table([baseline_lu.new2kid, ...
 %                       tot_es, ...
 %                       tot_es ./ hectares_chg]);
 % es_chg = fillmissing(es_chg, 'constant', 0);
 % es_chg.Properties.VariableNames = {'new2kid', 'tot_es', 'tot_es_ha'};
-% writetable(es_chg, 'Output/all_farm2mixed_tot_es_sprawl_2031_scc.csv');
+% writetable(es_chg, 'Output/farm2mixed_es.csv');
 % 
-% % 5.3. Ecosystem services, for equity weighting
-% % ---------------------------------------------
-% tot_es = [array2table(baseline_lu.new2kid), es_outs(:,1:5)]; 
-% tot_es.hectares_chg = hectares_chg;
+% 5.3. Recreation, for equity weighting
+% ---------------------------------------------
+% tot_es = [array2table(baseline_lu.new2kid), es_outs(:,2)]; 
+% tot_es.rec_ha = tot_es.rec ./ hectares_chg;
+% tot_es = fillmissing(tot_es, 'constant', 0);
 % tot_es.Properties.VariableNames(1) = {'new2kid'};
-% writetable(tot_es, 'Output/all_farm2mixed_all_es_sprawl_2031_scc.csv');
+% writetable(tot_es, 'Output/farm2mixed_rec.csv');
 % 
 % % 5.4. Costs: used for the identification of offset locations that
 % %      minimise the opportunity cost of agriculture
@@ -201,4 +203,4 @@ save('Output/new_ordering/per_hectare/min_cost_offset', 'min_cost_offset')
 %                           costs.farm ./ hectares_chg]);
 % cost_table = fillmissing(cost_table, 'constant', 0);
 % cost_table.Properties.VariableNames = {'new2kid', 'farm_oc', 'farm_oc_ha'};
-% writetable(cost_table, 'Output/all_farm2mixed_OC_sprawl_2031_scc.csv');
+% writetable(cost_table, 'Output/farm2mixed_OC.csv');

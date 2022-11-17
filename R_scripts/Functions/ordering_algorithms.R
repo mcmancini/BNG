@@ -170,55 +170,6 @@ calc_local_offset <- function(locs_to_offset, output_path, saveondisk){
   }
 }
 
-# ## ORDERING ALGORITHM
-# ## ==================
-# maximise_target <-  function(locs_to_offset, locs_to_target, decreasing, output_path, saveondisk){
-#   
-#   locs_to_offset$offset <- 0
-#   
-#   locs_to_target <- merge(seer_2km, locs_to_target, by = 'new2kid')
-#   offset_farmland <- locs_to_offset[,c(1,which(colnames(locs_to_offset) == 'farmland_area')), drop=TRUE]
-#   locs_to_target <- merge(locs_to_target, offset_farmland, by='new2kid')
-#   
-#   # reorder the cells based on the 'decreasing' function argument
-#   sort_idx <- sort(locs_to_target$target, decreasing = decreasing, index.return = TRUE)[[2]]
-#   locs_to_target <- locs_to_target[sort_idx, ]
-#   idx_positive_target <- sum(locs_to_target$target > 0)
-#   reshuffle_vector <- c(idx_positive_target:nrow(locs_to_target))
-#   resampled_vector <- sample(reshuffle_vector)
-#   locs_to_target[reshuffle_vector, ] <- locs_to_target[resampled_vector,]
-#   
-#   # Tot offset area = tot area of new buildings
-#   tot_offset <- sum(locs_to_offset$area_new_builds)
-#   offset_proj <- locs_to_offset$area_new_builds[locs_to_offset$area_new_builds > 0]
-#   sort_idx <- sort(offset_proj, decreasing = TRUE, index.return = TRUE)[[2]]
-#   offset_proj <- offset_proj[sort_idx]
-#   
-#   # ordering routine
-#   for (i in c(1:length(offset_proj))){
-#     area_to_offset <- offset_proj[i]
-#     enough_offset_idx <- which(locs_to_target$farmland_area >= area_to_offset)[1]
-#     offset_cell_id <- locs_to_target$new2kid[enough_offset_idx]
-#     idx = which(locs_to_offset$new2kid == offset_cell_id)
-#     locs_to_offset$offset[idx] <- area_to_offset
-#     locs_to_offset$farmland_area[idx] <- locs_to_offset$farmland_area[idx] - area_to_offset
-#     offset_area_perc <- area_to_offset / 400 # CORRECT TO /400 TO CORRECT THE % ?
-#     locs_to_offset$percent_frm[idx] <- locs_to_offset$percent_frm[idx] - offset_area_perc
-#     locs_to_offset$percent_grs[idx] <- locs_to_offset$percent_grs[idx] + 0.5 * offset_area_perc
-#     locs_to_offset$percent_wod[idx] <- locs_to_offset$percent_wod[idx] + 0.5 * offset_area_perc
-#     locs_to_target <- locs_to_target[-enough_offset_idx,]
-#   }
-#   
-#   offset <- check_output(locs_to_offset)
-#   
-#   if (saveondisk == FALSE){
-#     return(offset)
-#   } else {
-#     st_write(offset, output_path)
-#     return(offset)
-#   }
-# }
-
 ## ORDERING ALGORITHM
 ## ==================
 maximise_target <-  function(locs_to_offset, locs_to_target, decreasing, output_path, saveondisk){
@@ -239,33 +190,25 @@ maximise_target <-  function(locs_to_offset, locs_to_target, decreasing, output_
 
   # Tot offset area = tot area of new buildings
   tot_offset <- sum(locs_to_offset$area_new_builds)
-  offset_proj <- locs_to_offset[locs_to_offset$area_new_builds > 0,c('new2kid', 'farmland_area')]
-  sort_idx <- sort(offset_proj$farmland_area, decreasing = TRUE, index.return = TRUE)[[2]]
-  offset_proj <- offset_proj[sort_idx,]
+  offset_proj <- locs_to_offset$area_new_builds[locs_to_offset$area_new_builds > 0]
+  sort_idx <- sort(offset_proj, decreasing = TRUE, index.return = TRUE)[[2]]
+  offset_proj <- offset_proj[sort_idx]
 
   # ordering routine
-  for (i in c(1:nrow(locs_to_target))){
-    avail_area <- locs_to_target$farmland_area[i]
-    if (nrow(offset_proj)>0){
-      area_diff <- offset_proj$farmland_area - avail_area
-      fitting_offset_idx <- which.min(replace(area_diff, area_diff<0, NA))
-      if (length(fitting_offset_idx) == 0){
-        fitting_offset_idx <- 1
-      }
-      offset_cell_id <- offset_proj$new2kid[fitting_offset_idx]
-      idx = which(locs_to_offset$new2kid == offset_cell_id)
-      offset_area <- locs_to_offset$area_new_builds[idx]
-      locs_to_offset$offset[idx] <- offset_area
-      locs_to_offset$farmland_area[idx] <- locs_to_offset$farmland_area[idx] - offset_area
-      offset_area_perc <- offset_area / 400 # CORRECT TO /400 TO CORRECT THE % ?
-      locs_to_offset$percent_frm[idx] <- locs_to_offset$percent_frm[idx] - offset_area_perc
-      locs_to_offset$percent_grs[idx] <- locs_to_offset$percent_grs[idx] + 0.5 * offset_area_perc
-      locs_to_offset$percent_wod[idx] <- locs_to_offset$percent_wod[idx] + 0.5 * offset_area_perc
-      offset_proj <- offset_proj[-fitting_offset_idx,]
-    } else {
-      break
-    }
+  for (i in c(1:length(offset_proj))){
+    area_to_offset <- offset_proj[i]
+    enough_offset_idx <- which(locs_to_target$farmland_area >= area_to_offset)[1]
+    offset_cell_id <- locs_to_target$new2kid[enough_offset_idx]
+    idx = which(locs_to_offset$new2kid == offset_cell_id)
+    locs_to_offset$offset[idx] <- area_to_offset
+    locs_to_offset$farmland_area[idx] <- locs_to_offset$farmland_area[idx] - area_to_offset
+    offset_area_perc <- area_to_offset / 400 # CORRECT TO /400 TO CORRECT THE % ?
+    locs_to_offset$percent_frm[idx] <- locs_to_offset$percent_frm[idx] - offset_area_perc
+    locs_to_offset$percent_grs[idx] <- locs_to_offset$percent_grs[idx] + 0.5 * offset_area_perc
+    locs_to_offset$percent_wod[idx] <- locs_to_offset$percent_wod[idx] + 0.5 * offset_area_perc
+    locs_to_target <- locs_to_target[-enough_offset_idx,]
   }
+
   offset <- check_output(locs_to_offset)
 
   if (saveondisk == FALSE){
@@ -275,3 +218,60 @@ maximise_target <-  function(locs_to_offset, locs_to_target, decreasing, output_
     return(offset)
   }
 }
+
+# ## ORDERING ALGORITHM VERSION 2
+# ## ============================
+# maximise_target <-  function(locs_to_offset, locs_to_target, decreasing, output_path, saveondisk){
+# 
+#   locs_to_offset$offset <- 0
+# 
+#   locs_to_target <- merge(seer_2km, locs_to_target, by = 'new2kid')
+#   offset_farmland <- locs_to_offset[,c(1,which(colnames(locs_to_offset) == 'farmland_area')), drop=TRUE]
+#   locs_to_target <- merge(locs_to_target, offset_farmland, by='new2kid')
+# 
+#   # reorder the cells based on the 'decreasing' function argument
+#   sort_idx <- sort(locs_to_target$target, decreasing = decreasing, index.return = TRUE)[[2]]
+#   locs_to_target <- locs_to_target[sort_idx, ]
+#   idx_positive_target <- sum(locs_to_target$target > 0)
+#   reshuffle_vector <- c(idx_positive_target:nrow(locs_to_target))
+#   resampled_vector <- sample(reshuffle_vector)
+#   locs_to_target[reshuffle_vector, ] <- locs_to_target[resampled_vector,]
+# 
+#   # Tot offset area = tot area of new buildings
+#   tot_offset <- sum(locs_to_offset$area_new_builds)
+#   offset_proj <- locs_to_offset[locs_to_offset$area_new_builds > 0,c('new2kid', 'farmland_area', 'area_new_builds')]
+#   sort_idx <- sort(offset_proj$farmland_area, decreasing = TRUE, index.return = TRUE)[[2]]
+#   offset_proj <- offset_proj[sort_idx,]
+# 
+#   # ordering routine
+#   for (i in c(1:nrow(locs_to_target))){
+#     avail_area <- locs_to_target$farmland_area[i]
+#     if (nrow(offset_proj)>0){
+#       area_diff <-  avail_area - offset_proj$area_new_builds
+#       fitting_offset_idx <- which.min(replace(area_diff, area_diff<0, NA))
+#       if (length(fitting_offset_idx) == 0){
+#         fitting_offset_idx <- 1
+#       }
+#       offset_cell_id <- locs_to_target$new2kid[i]
+#       idx = which(locs_to_offset$new2kid == offset_cell_id)
+#       offset_area <- offset_proj$area_new_builds[fitting_offset_idx]
+#       locs_to_offset$offset[idx] <- offset_area
+#       locs_to_offset$farmland_area[idx] <- locs_to_offset$farmland_area[idx] - offset_area
+#       offset_area_perc <- offset_area / 400 # CORRECT TO /400 TO CORRECT THE % ?
+#       locs_to_offset$percent_frm[idx] <- locs_to_offset$percent_frm[idx] - offset_area_perc
+#       locs_to_offset$percent_grs[idx] <- locs_to_offset$percent_grs[idx] + 0.5 * offset_area_perc
+#       locs_to_offset$percent_wod[idx] <- locs_to_offset$percent_wod[idx] + 0.5 * offset_area_perc
+#       offset_proj <- offset_proj[-fitting_offset_idx,]
+#     } else {
+#       break
+#     }
+#   }
+#   offset <- check_output(locs_to_offset)
+# 
+#   if (saveondisk == FALSE){
+#     return(offset)
+#   } else {
+#     st_write(offset, output_path)
+#     return(offset)
+#   }
+# }

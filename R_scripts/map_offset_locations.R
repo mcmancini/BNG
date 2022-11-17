@@ -67,7 +67,7 @@ seer_2km <- seer_2km[seer_2km$new2kid %in% cell_id, 'new2kid']
 
 ## 1.2. Offset locations, local offset
 ## -----------------------------------
-setwd(paste0(gitpath,'Output/new_ordering/per_hectare/'))
+setwd(paste0(gitpath,'Output/'))
 local_bio_offset <- read.csv('local_bio_offset.csv')
 local_bio_offset <- merge(seer_2km, local_bio_offset, by='new2kid')
 
@@ -79,7 +79,7 @@ max_bio_offset <- merge(seer_2km, max_bio_offset, by='new2kid')
 
 ## 1.4. Offset locations, max ecosystem services
 ## ---------------------------------------------
-max_es_offset <- read.csv('max_es_rec_ghg_only_offset.csv')
+max_es_offset <- read.csv('max_es_offset.csv')
 max_es_offset <- merge(seer_2km, max_es_offset, by='new2kid')
 
 ## 1.5. Offset locations, equity weighted recreation
@@ -128,7 +128,7 @@ df <- max_es_offset
 max_es <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
                               column = 'offset_area_ha', 
                               limits = c(0, 300),
-                              plot_title = 'c - max es',
+                              plot_title = 'c',
                               legend_title = 'Offset area',
                               legend_position = 'none', 
                               scale = 'magma', 
@@ -183,7 +183,7 @@ figure <- ggarrange(local_bio, max_bio,  max_es, rec_mui, min_cost,
 # figure <- annotate_figure(figure, 
 #                           top = text_grob(plot_title, color = "black", face = "bold", size = 32))
 save_path <- paste0(gitpath,'Output/Maps/')
-filename <- 'offsets_new_order_per_hectare.jpeg'
+filename <- 'offsets_new_order_per_ha.jpeg'
 ggsave(filename=filename, plot = figure, device = "jpeg",
        path = save_path, units = "in", width = 12, height = 16) 
 
