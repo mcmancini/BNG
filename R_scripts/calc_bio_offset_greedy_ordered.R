@@ -30,19 +30,19 @@ datapath          <- "D:\\Documents\\OneDrive - University of Exeter\\Data\\BNG\
 seer_path         <- paste0(datapath,    "SEER_GRID/")
 base_lcm_path     <- paste0(datapath,    "LCM/LCM_2km/lcm_aggr_2000.csv")
 urban_lcm_path    <- paste0(datapath,    "Urban Sprawl - F.Eigenbrod/urban_sprawl_2031_sprawl.csv")
-bio_input_path    <- paste0(gitpath,     "Output/farm2mixed_bio.csv")
-es_input_path     <- paste0(gitpath,     "Output/farm2mixed_es.csv")
-rec_input_path    <- paste0(gitpath,     "Output/farm2mixed_rec.csv")
-cost_input_path   <- paste0(gitpath,     "Output/farm2mixed_OC.csv")
+bio_input_path    <- paste0(gitpath,     "Output/farm2mixed_bio_scc.csv")
+es_input_path     <- paste0(gitpath,     "Output/farm2mixed_es_scc.csv")
+rec_input_path    <- paste0(gitpath,     "Output/farm2mixed_rec_scc.csv")
+cost_input_path   <- paste0(gitpath,     "Output/farm2mixed_Oc_scc.csv")
 census_path       <- paste0(datapath,    "SEER_SOCIO_ECON/SEER_2k_socioecon_eng.csv")
 
 # Output paths
 output_path       <- paste0(gitpath,     "Output/")
-local_output_path <- paste0(output_path, "local_bio_offset.csv")
-bio_output_path   <- paste0(output_path, "max_bio_offset.csv")
-es_output_path    <- paste0(output_path, "max_es_offset.csv")
-rec_output_path   <- paste0(output_path, "max_equity_offset.csv")
-cost_output_path  <- paste0(output_path, "min_cost_offset.csv")
+local_output_path <- paste0(output_path, "local_bio_offset_scc.csv")
+bio_output_path   <- paste0(output_path, "max_bio_offset_scc.csv")
+es_output_path    <- paste0(output_path, "max_es_offset_scc.csv")
+rec_output_path   <- paste0(output_path, "max_equity_offset_scc.csv")
+cost_output_path  <- paste0(output_path, "min_cost_offset_scc.csv")
 
 # load required functions
 source(paste0(gitpath, '/R_scripts/Functions/load_bng_data.R'))
