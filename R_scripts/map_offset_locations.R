@@ -24,6 +24,7 @@ rm(list=ls())
 library(sf)
 library(gridExtra)    # grid_arrange
 library(ggpubr)       # annotate_figure
+library(RPostgres)
 
 #update path for different machines 
 gitpath <- "D:\\Documents\\GitHub\\BNG\\" 
@@ -73,23 +74,23 @@ local_bio_offset <- merge(seer_2km, local_bio_offset, by='new2kid')
 
 ## 1.3. Offset locations, max biodiversity gains
 ## ---------------------------------------------
-max_bio_offset <- read.csv('max_bio_offset.csv') # all services
+max_bio_offset <- read.csv('max_bio_offset_scc.csv') # all services
 # max_bio_offset <- read.csv('max_es_rec_ghg_only_offset_urban_sprawl_scc.csv') # flooding and water quality excluded
 max_bio_offset <- merge(seer_2km, max_bio_offset, by='new2kid')
 
 ## 1.4. Offset locations, max ecosystem services
 ## ---------------------------------------------
-max_es_offset <- read.csv('max_es_offset.csv')
+max_es_offset <- read.csv('max_es_offset_scc.csv')
 max_es_offset <- merge(seer_2km, max_es_offset, by='new2kid')
 
 ## 1.5. Offset locations, equity weighted recreation
 ## -------------------------------------------------
-rec_mui_offset <- read.csv('max_equity_offset.csv')
+rec_mui_offset <- read.csv('max_equity_offset_scc.csv')
 rec_mui_offset <- merge(seer_2km, rec_mui_offset, by='new2kid')
 
 ## 1.5. Offset locations, equity weighted recreation
 ## -------------------------------------------------
-min_cost_offset <- read.csv('min_cost_offset.csv')
+min_cost_offset <- read.csv('min_cost_offset_scc.csv')
 min_cost_offset <- merge(seer_2km, min_cost_offset, by='new2kid')
 
 
@@ -183,7 +184,7 @@ figure <- ggarrange(local_bio, max_bio,  max_es, rec_mui, min_cost,
 # figure <- annotate_figure(figure, 
 #                           top = text_grob(plot_title, color = "black", face = "bold", size = 32))
 save_path <- paste0(gitpath,'Output/Maps/')
-filename <- 'offsets_new_order_per_ha.jpeg'
+filename <- 'offsets_scc.jpeg'
 ggsave(filename=filename, plot = figure, device = "jpeg",
        path = save_path, units = "in", width = 12, height = 16) 
 
