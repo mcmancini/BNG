@@ -23,26 +23,28 @@ library(sf)
 library(dplyr)
 
 # update path for different machines 
-gitpath           <- "D:\\Documents\\GitHub\\BNG\\" 
-datapath          <- "D:\\Documents\\OneDrive - University of Exeter\\Data\\BNG\\Data\\"
+gitpath            <- "D:\\Documents\\GitHub\\BNG\\" 
+datapath           <- "D:\\Documents\\OneDrive - University of Exeter\\Data\\BNG\\Data\\"
 
 # Input paths
-seer_path         <- paste0(datapath,    "SEER_GRID/")
-base_lcm_path     <- paste0(datapath,    "LCM/LCM_2km/lcm_aggr_2000.csv")
-urban_lcm_path    <- paste0(datapath,    "Urban Sprawl - F.Eigenbrod/urban_sprawl_2031_sprawl.csv")
-bio_input_path    <- paste0(gitpath,     "Output/farm2mixed_bio_scc.csv")
-es_input_path     <- paste0(gitpath,     "Output/farm2mixed_es_scc.csv")
-rec_input_path    <- paste0(gitpath,     "Output/farm2mixed_rec_scc.csv")
-cost_input_path   <- paste0(gitpath,     "Output/farm2mixed_Oc_scc.csv")
-census_path       <- paste0(datapath,    "SEER_SOCIO_ECON/SEER_2k_socioecon_eng.csv")
+seer_path          <- paste0(datapath,    "SEER_GRID/")
+base_lcm_path      <- paste0(datapath,    "LCM/LCM_2km/lcm_aggr_2000.csv")
+urban_lcm_path     <- paste0(datapath,    "Urban Sprawl - F.Eigenbrod/urban_sprawl_2031_sprawl.csv")
+bio_input_path     <- paste0(gitpath,     "Output/farm2sng_bio.csv")
+es_input_path      <- paste0(gitpath,     "Output/farm2sng_es.csv")
+net_es_input_path  <- paste0(gitpath,     "Output/farm2sng_netES.csv")
+rec_input_path     <- paste0(gitpath,     "Output/farm2sng_rec.csv")
+cost_input_path    <- paste0(gitpath,     "Output/farm2sng_Oc.csv")
+census_path        <- paste0(datapath,    "SEER_SOCIO_ECON/SEER_2k_socioecon_eng.csv")
 
 # Output paths
-output_path       <- paste0(gitpath,     "Output/")
-local_output_path <- paste0(output_path, "local_bio_offset_scc.csv")
-bio_output_path   <- paste0(output_path, "max_bio_offset_scc.csv")
-es_output_path    <- paste0(output_path, "max_es_offset_scc.csv")
-rec_output_path   <- paste0(output_path, "max_equity_offset_scc.csv")
-cost_output_path  <- paste0(output_path, "min_cost_offset_scc.csv")
+output_path        <- paste0(gitpath,     "Output/")
+local_output_path  <- paste0(output_path, "local_bio_offset_sng.csv")
+bio_output_path    <- paste0(output_path, "max_bio_offset_sng.csv")
+es_output_path     <- paste0(output_path, "max_es_offset_sng.csv")
+net_es_output_path <- paste0(output_path, "max_netES_offset_sng.csv")
+rec_output_path    <- paste0(output_path, "max_equity_offset_sng.csv")
+cost_output_path   <- paste0(output_path, "min_cost_offset_sng.csv")
 
 # load required functions
 source(paste0(gitpath, '/R_scripts/Functions/load_bng_data.R'))
@@ -75,21 +77,27 @@ city_spread <- load_housing_locations(base_lcm_path, urban_lcm_path)
 
 ## 2.1. Local offset
 ## -----------------
-local_offset <- calc_local_offset(city_spread, local_output_path, saveondisk)
+local_offset <- calc_local_offset(city_spread, local_output_path, 'sng', saveondisk)
 
 ## 2.2. Offset based on max biodiversity improvements
 ## --------------------------------------------------
 max_bio <- read.csv(bio_input_path)[, c('new2kid','sr_chg_ha')] %>%
   rename(target = sr_chg_ha)
-bio_offset <- maximise_target(city_spread, max_bio, decreasing=TRUE, bio_output_path, saveondisk=TRUE)
+bio_offset <- maximise_target(city_spread, max_bio, 'sng', decreasing=TRUE, bio_output_path, saveondisk=TRUE)
 
 ## 2.3. Offset based on max Ecosystem Services
 ## -------------------------------------------
 max_es <-  read.csv(es_input_path)[, c('new2kid','tot_es_ha')] %>%
   rename(target = tot_es_ha)
-es_offset <- maximise_target(city_spread, max_es, decreasing=TRUE, es_output_path, saveondisk)
+es_offset <- maximise_target(city_spread, max_es, 'sng', decreasing=TRUE, es_output_path, saveondisk)
 
-## 2.4. offset based max rec, equity weighted for recreation 
+## 2.4. Offset based on max net ecosystem services
+## -----------------------------------------------
+max_netES <-  read.csv(net_es_input_path)[, c('new2kid','net_es_ha')] %>%
+  rename(target = net_es_ha)
+net_es_offset <- maximise_target(city_spread, max_netES, 'sng', decreasing=TRUE, net_es_output_path, saveondisk)
+
+## 2.5. offset based max rec, equity weighted for recreation 
 ## ---------------------------------------------------------
 max_rec <- read.csv(rec_input_path)[, c('new2kid','rec_ha')] %>%
   rename(target = rec_ha)
@@ -109,11 +117,11 @@ max_rec <- max_rec %>%
   dplyr::select(new2kid, target)
 st_geometry(max_rec) <- NULL
 max_rec$target[is.na(max_rec$target)] <- 0
-rec_offset <- maximise_target(city_spread, max_rec, decreasing=TRUE, rec_output_path, saveondisk)
+rec_offset <- maximise_target(city_spread, max_rec, offset_lc='sng', decreasing=TRUE, rec_output_path, saveondisk)
 
-## 2.5. Offset based on min. cost
+## 2.6. Offset based on min. cost
 ## ------------------------------
 min_cost <- read.csv(cost_input_path)[, c('new2kid', 'farm_oc_ha')] %>%
   rename(target = farm_oc_ha)
-cost_offset <- maximise_target(city_spread, min_cost, decreasing=FALSE, cost_output_path, saveondisk)
+cost_offset <- maximise_target(city_spread, min_cost, 'sng', decreasing=FALSE, cost_output_path, saveondisk)
 

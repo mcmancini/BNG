@@ -66,7 +66,7 @@ seer_2km <- seer_2km[seer_2km$new2kid %in% cell_id, 'new2kid']
 file_path <- paste0(gitpath,"Output/baseline_2031_urbanisation/Offset_outputs/")
 
 #specify the correct file extension eg .xls .csv .xlsx
-path_files <- dir(file_path, pattern = "*.csv")
+path_files <- dir(file_path, pattern = "*sng.csv")
 
 #read file files and merge them into one dataframe
 all_data <- tibble(filename = path_files) %>% 
@@ -76,11 +76,12 @@ all_data <- tibble(filename = path_files) %>%
   # use stringr do make file identifiers when subsetting the data 
   dplyr::mutate(filename = str_remove(filename, pattern = ".csv"), 
          scenario = ifelse(str_detect(filename, "local_offset") == TRUE,"local_offset", 
-                           ifelse(str_detect(filename,"max_bio") == TRUE, "max_bio", 
-                                   ifelse(str_detect(filename,"max_es_offset") == TRUE, "max_es", 
-                                           ifelse(str_detect(filename, "max_es_equity") == TRUE, "max_es_equity_weighted",
-                                                  ifelse(str_detect(filename, "max_rec_offset")==TRUE, "max_rec", 
-                                                         ifelse(str_detect(filename, "max_rec_equity") == TRUE, "max_rec_equity_weighted", "min_cost")))))), 
+                        ifelse(str_detect(filename,"max_bio") == TRUE, "max_bio", 
+                            ifelse(str_detect(filename,"max_es_offset") == TRUE, "max_es", 
+                                ifelse(str_detect(filename,"max_netES_offset") == TRUE, "max_netES", 
+                                    ifelse(str_detect(filename, "max_es_equity") == TRUE, "max_es_equity_weighted",
+                                        ifelse(str_detect(filename, "max_rec_offset")==TRUE, "max_rec", 
+                                            ifelse(str_detect(filename, "max_rec_equity") == TRUE, "max_rec_equity_weighted", "min_cost"))))))), 
          result_file = ifelse(str_detect(filename, "benefits") == TRUE, "benefits", 
                           ifelse(str_detect(filename, "costs") == TRUE, "costs", 
                                   ifelse(str_detect(filename, "es_outs") == TRUE, "es_outs", 
@@ -166,8 +167,7 @@ total_benefits <- all_data %>%
   filter(result_file == "benefits") %>% 
   filter(hectares_chg > 0) %>% 
   group_by(scenario) %>% 
-  summarise(total_benefits = sum(ghg_forestry) + sum(rec), 
-            total_other_ben = sum(ghg_forestry), 
+  summarise(total_benefits = sum(rec), 
             total_rec = sum(rec))
 
 total_costs <- all_data %>%
@@ -203,7 +203,7 @@ total_sp_rich_sum_tbl <- total_sp_rich %>%
 benefit_table <- full_join(total_benefits, total_costs, by = "scenario") %>% 
   full_join(total_sp_rich_sum_tbl, by = "scenario")
 
-write.csv(benefit_table, paste0(gitpath, "Output/Figures/Scenario_benefits_summary_table.csv"))
+write.csv(benefit_table, paste0(gitpath, "Output/Figures/Scenario_benefits_summary_table_sng.csv"))
 
 
 ## =============================================================================

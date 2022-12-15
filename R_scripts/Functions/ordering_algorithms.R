@@ -21,25 +21,44 @@ library(tidyr)
 ## CHECK_OUTPUT. Function checking that checks and returns the output of the
 ##   ordering algorithms. Used internally in this script
 ## =========================================================================
-check_output <- function(offset_locations){
-  df <- offset_locations %>%
-    dplyr::mutate(
-      wood_ha = wood_ha_scenario + (offset/2), 
-      sng_ha = sng_ha_scenario + (offset/2)) %>% 
-    rename(
-      farm_ha = farmland_area,
-      urban_ha = urban_ha_scenario, 
-      water_ha = water_ha_scenario) %>% 
-    dplyr::select(
-      new2kid, 
-      farm_ha,
-      wood_ha, 
-      sng_ha, 
-      urban_ha, 
-      water_ha, 
-      offset) %>% 
-    dplyr::rename(offset_area_ha = offset)
-  
+check_output <- function(offset_locations, offset_lc){
+  if (offset_lc == 'mixed'){
+    df <- offset_locations %>%
+      dplyr::mutate(
+        wood_ha = wood_ha_scenario + (offset/2), 
+        sng_ha = sng_ha_scenario + (offset/2)) %>% 
+      rename(
+        farm_ha = farmland_area,
+        urban_ha = urban_ha_scenario, 
+        water_ha = water_ha_scenario) %>% 
+      dplyr::select(
+        new2kid, 
+        farm_ha,
+        wood_ha, 
+        sng_ha, 
+        urban_ha, 
+        water_ha, 
+        offset) %>% 
+      dplyr::rename(offset_area_ha = offset)
+  } else if (offset_lc == 'sng'){
+    df <- offset_locations %>%
+      dplyr::mutate(
+        sng_ha = sng_ha_scenario + offset) %>% 
+      rename(
+        wood_ha = wood_ha_scenario,
+        farm_ha = farmland_area,
+        urban_ha = urban_ha_scenario, 
+        water_ha = water_ha_scenario) %>% 
+      dplyr::select(
+        new2kid, 
+        farm_ha,
+        wood_ha, 
+        sng_ha, 
+        urban_ha, 
+        water_ha, 
+        offset) %>% 
+      dplyr::rename(offset_area_ha = offset)
+  }
   
   # check cell areas
   check_area <- df %>% 
@@ -59,7 +78,7 @@ check_output <- function(offset_locations){
 
 ## 1) LOCAL OFFSET
 ## ===============
-calc_local_offset <- function(locs_to_offset, output_path, saveondisk){
+calc_local_offset <- function(locs_to_offset, output_path, offset_lc, saveondisk){
   
   # we know for each cell the area in m2 converted into new buildings. Is there an
   # equal amount of farmland to be converted into high biodiversity land? If so, 
@@ -77,9 +96,17 @@ calc_local_offset <- function(locs_to_offset, output_path, saveondisk){
   
   bio_area_perc <- locs_to_offset$offset[idx] / (400)
   locs_to_offset$percent_frm[idx] <- round(locs_to_offset$percent_frm[idx] - bio_area_perc, 9)
-  locs_to_offset$percent_grs[idx] <- round(locs_to_offset$percent_grs[idx] + (bio_area_perc / 2), 9)
-  locs_to_offset$percent_wod[idx] <- round(locs_to_offset$percent_wod[idx] + (bio_area_perc / 2), 9)
   
+  if (offset_lc == 'mixed'){
+    locs_to_offset$percent_grs[idx] <- round(locs_to_offset$percent_grs[idx] + (bio_area_perc / 2), 9)
+    locs_to_offset$percent_wod[idx] <- round(locs_to_offset$percent_wod[idx] + (bio_area_perc / 2), 9)
+  } else if (offset_lc == 'sng'){
+    locs_to_offset$percent_grs[idx] <- round(locs_to_offset$percent_grs[idx] + (bio_area_perc), 9)
+  } else {
+    stop("The \'offset_lc\' argument can only assume values \'mixed\' or \'sng\'")
+  }
+  
+
   ## Case 2: There is some farmland available but not enough for biodiversity 
   ## compensation
   idx <- (locs_to_offset$area_new_builds > locs_to_offset$offset) &
@@ -90,8 +117,14 @@ calc_local_offset <- function(locs_to_offset, output_path, saveondisk){
   
   bio_area_perc <- locs_to_offset$offset[idx] / (400)
   locs_to_offset$percent_frm[idx] <- 0
-  locs_to_offset$percent_grs[idx] <- round(locs_to_offset$percent_grs[idx] + (bio_area_perc / 2), 9)
-  locs_to_offset$percent_wod[idx] <- round(locs_to_offset$percent_wod[idx] + (bio_area_perc / 2), 9)
+  if (offset_lc == 'mixed'){
+    locs_to_offset$percent_grs[idx] <- round(locs_to_offset$percent_grs[idx] + (bio_area_perc / 2), 9)
+    locs_to_offset$percent_wod[idx] <- round(locs_to_offset$percent_wod[idx] + (bio_area_perc / 2), 9)
+  } else if (offset_lc == 'sng'){
+    locs_to_offset$percent_grs[idx] <- round(locs_to_offset$percent_grs[idx] + (bio_area_perc), 9)
+  } else {
+    stop("The \'offset_lc\' argument can only assume values \'mixed\' or \'sng\'")
+  }
   
   ## Case 3: There is no farmland available for biodiversity compensation
   ## In this case, select the closest cell with available farmland, if possible in
@@ -156,11 +189,17 @@ calc_local_offset <- function(locs_to_offset, output_path, saveondisk){
     locs_to_offset$offset[ind] <- locs_to_offset$offset[ind] + frm_needed
     locs_to_offset$farmland_area[ind] <- locs_to_offset$farmland_area[ind] - frm_needed
     locs_to_offset$percent_frm[ind] <- round(locs_to_offset$percent_frm[ind] - bio_area_perc, 9)
-    locs_to_offset$percent_grs[ind] <- round(locs_to_offset$percent_grs[ind] + (bio_area_perc / 2), 9)
-    locs_to_offset$percent_wod[ind] <- round(locs_to_offset$percent_wod[ind] + (bio_area_perc / 2), 9)
+    if (offset_lc == 'mixed'){
+      locs_to_offset$percent_grs[ind] <- round(locs_to_offset$percent_grs[ind] + (bio_area_perc / 2), 9)
+      locs_to_offset$percent_wod[ind] <- round(locs_to_offset$percent_wod[ind] + (bio_area_perc / 2), 9)
+    } else if (offset_lc == 'sng'){
+      locs_to_offset$percent_grs[ind] <- round(locs_to_offset$percent_grs[ind] + (bio_area_perc), 9)
+    } else {
+      stop("The \'offset_lc\' argument can only assume values \'mixed\' or \'sng\'")
+    }
   }
   
-  offset <- check_output(locs_to_offset)
+  offset <- check_output(locs_to_offset, offset_lc)
   
   if (saveondisk == FALSE){
     return(offset)
@@ -172,7 +211,7 @@ calc_local_offset <- function(locs_to_offset, output_path, saveondisk){
 
 ## ORDERING ALGORITHM
 ## ==================
-maximise_target <-  function(locs_to_offset, locs_to_target, decreasing, output_path, saveondisk){
+maximise_target <-  function(locs_to_offset, locs_to_target, offset_lc, decreasing, output_path, saveondisk){
 
   locs_to_offset$offset <- 0
 
@@ -183,10 +222,10 @@ maximise_target <-  function(locs_to_offset, locs_to_target, decreasing, output_
   # reorder the cells based on the 'decreasing' function argument
   sort_idx <- sort(locs_to_target$target, decreasing = decreasing, index.return = TRUE)[[2]]
   locs_to_target <- locs_to_target[sort_idx, ]
-  idx_positive_target <- sum(locs_to_target$target > 0)
-  reshuffle_vector <- c(idx_positive_target:nrow(locs_to_target))
-  resampled_vector <- sample(reshuffle_vector)
-  locs_to_target[reshuffle_vector, ] <- locs_to_target[resampled_vector,]
+  # idx_positive_target <- sum(locs_to_target$target > 0)
+  # reshuffle_vector <- c(idx_positive_target:nrow(locs_to_target))
+  # resampled_vector <- sample(reshuffle_vector)
+  # locs_to_target[reshuffle_vector, ] <- locs_to_target[resampled_vector,]
 
   # Tot offset area = tot area of new buildings
   tot_offset <- sum(locs_to_offset$area_new_builds)
@@ -204,12 +243,18 @@ maximise_target <-  function(locs_to_offset, locs_to_target, decreasing, output_
     locs_to_offset$farmland_area[idx] <- locs_to_offset$farmland_area[idx] - area_to_offset
     offset_area_perc <- area_to_offset / 400 # CORRECT TO /400 TO CORRECT THE % ?
     locs_to_offset$percent_frm[idx] <- locs_to_offset$percent_frm[idx] - offset_area_perc
-    locs_to_offset$percent_grs[idx] <- locs_to_offset$percent_grs[idx] + 0.5 * offset_area_perc
-    locs_to_offset$percent_wod[idx] <- locs_to_offset$percent_wod[idx] + 0.5 * offset_area_perc
+    if (offset_lc == 'mixed'){
+      locs_to_offset$percent_grs[idx] <- round(locs_to_offset$percent_grs[idx] + 0.5 * offset_area_perc, 9)
+      locs_to_offset$percent_wod[idx] <- round(locs_to_offset$percent_wod[idx] + 0.5 * offset_area_perc, 9)
+    } else if (offset_lc == 'sng'){
+      locs_to_offset$percent_grs[idx] <- round(locs_to_offset$percent_grs[idx] + offset_area_perc, 9)
+    } else {
+      stop("The \'offset_lc\' argument can only assume values \'mixed\' or \'sng\'")
+    }
     locs_to_target <- locs_to_target[-enough_offset_idx,]
   }
 
-  offset <- check_output(locs_to_offset)
+  offset <- check_output(locs_to_offset, offset_lc)
 
   if (saveondisk == FALSE){
     return(offset)

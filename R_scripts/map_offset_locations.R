@@ -69,28 +69,33 @@ seer_2km <- seer_2km[seer_2km$new2kid %in% cell_id, 'new2kid']
 ## 1.2. Offset locations, local offset
 ## -----------------------------------
 setwd(paste0(gitpath,'Output/'))
-local_bio_offset <- read.csv('local_bio_offset.csv')
+local_bio_offset <- read.csv('local_bio_offset_sng.csv')
 local_bio_offset <- merge(seer_2km, local_bio_offset, by='new2kid')
 
 ## 1.3. Offset locations, max biodiversity gains
 ## ---------------------------------------------
-max_bio_offset <- read.csv('max_bio_offset_scc.csv') # all services
-# max_bio_offset <- read.csv('max_es_rec_ghg_only_offset_urban_sprawl_scc.csv') # flooding and water quality excluded
+max_bio_offset <- read.csv('max_bio_offset_sng.csv') # all services
+# max_bio_offset <- read.csv('max_es_rec_ghg_only_offset_urban_sprawl_sng.csv') # flooding and water quality excluded
 max_bio_offset <- merge(seer_2km, max_bio_offset, by='new2kid')
 
 ## 1.4. Offset locations, max ecosystem services
 ## ---------------------------------------------
-max_es_offset <- read.csv('max_es_offset_scc.csv')
+max_es_offset <- read.csv('max_es_offset_sng.csv')
 max_es_offset <- merge(seer_2km, max_es_offset, by='new2kid')
 
-## 1.5. Offset locations, equity weighted recreation
+## 1.5. Offset locations, max net ecosystem services
+## ---------------------------------------------
+max_netES_offset <- read.csv('max_netES_offset_sng.csv')
+max_netES_offset <- merge(seer_2km, max_netES_offset, by='new2kid')
+
+## 1.6. Offset locations, equity weighted recreation
 ## -------------------------------------------------
-rec_mui_offset <- read.csv('max_equity_offset_scc.csv')
+rec_mui_offset <- read.csv('max_equity_offset_sng.csv')
 rec_mui_offset <- merge(seer_2km, rec_mui_offset, by='new2kid')
 
-## 1.5. Offset locations, equity weighted recreation
+## 1.7. Offset locations, equity weighted recreation
 ## -------------------------------------------------
-min_cost_offset <- read.csv('min_cost_offset_scc.csv')
+min_cost_offset <- read.csv('min_cost_offset_sng.csv')
 min_cost_offset <- merge(seer_2km, min_cost_offset, by='new2kid')
 
 
@@ -123,8 +128,8 @@ max_bio <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,],
                                scale = 'magma', 
                                direction = -1)
 
-## 2.3. Offset locations, max household WTP
-## ----------------------------------------
+## 2.3. Offset locations, max ES
+## -----------------------------
 df <- max_es_offset
 max_es <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
                               column = 'offset_area_ha', 
@@ -135,9 +140,21 @@ max_es <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,],
                               scale = 'magma', 
                               direction = -1)
 
+## 2.3. Offset locations, max net ES
+## ---------------------------------
+df <- max_netES_offset
+max_netES <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
+                              column = 'offset_area_ha', 
+                              limits = c(0, 300),
+                              plot_title = 'c',
+                              legend_title = 'Offset area',
+                              legend_position = 'none', 
+                              scale = 'magma', 
+                              direction = -1)
 
-## 2.4. Offset locations, max population WTP
-## -----------------------------------------
+
+## 2.4. Offset locations, max recreation equity weighted
+## -----------------------------------------------------
 df <- rec_mui_offset
 
 rec_mui <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
@@ -149,12 +166,6 @@ rec_mui <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,],
                                scale = 'magma', 
                                direction = -1)
 
-
-figure <- ggarrange(local_bio, max_bio,  max_es, rec_mui, 
-                    ncol = 2, nrow = 2,
-                    common.legend = TRUE,
-                    legend = 'bottom') + 
-  bgcolor("white")     
 
 ## 2.5. Offset locations, min cost
 ## -------------------------------
@@ -173,7 +184,7 @@ min_cost <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,],
 ## 2.5. facet plots
 ## ----------------
 
-figure <- ggarrange(local_bio, max_bio,  max_es, rec_mui, min_cost, 
+figure <- ggarrange(local_bio, max_bio,  max_es, max_netES, rec_mui, min_cost, 
                     ncol = 2, nrow = 3,
                     common.legend = TRUE,
                     legend = 'bottom') + 
@@ -184,7 +195,7 @@ figure <- ggarrange(local_bio, max_bio,  max_es, rec_mui, min_cost,
 # figure <- annotate_figure(figure, 
 #                           top = text_grob(plot_title, color = "black", face = "bold", size = 32))
 save_path <- paste0(gitpath,'Output/Maps/')
-filename <- 'offsets_scc.jpeg'
+filename <- 'offsets_sng_2.jpeg'
 ggsave(filename=filename, plot = figure, device = "jpeg",
        path = save_path, units = "in", width = 12, height = 16) 
 
