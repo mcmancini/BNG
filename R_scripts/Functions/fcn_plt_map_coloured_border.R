@@ -33,7 +33,7 @@ fcn_plt_map <- function(data,
                         scale, 
                         border_col,
                         direction){
-  eng_border <- st_read("C:/Users/Rebecca/Documents/GitHub/BNG/R_scripts/Functions/england_full_clipped.shp") 
+  eng_border <- st_read("C:/Users/rmc1d22/Documents/GitHub/BNG/R_scripts/Functions/england_full_clipped.shp") 
   
   eng_border_buff <- st_simplify(eng_border,preserveTopology = FALSE, dTolerance = 5000) %>% 
     st_buffer(dist = 10000)
@@ -110,7 +110,7 @@ fcn_continuous_plot <- function(plot_data,
                                 border_col,
                                 direction) {
   df <- plot_data
-  eng_border <- st_read("C:/Users/Rebecca/Documents/GitHub/BNG/R_scripts/Functions/england_full_clipped.shp")
+  eng_border <- st_read("C:/Users/rmc1d22/Documents/GitHub/BNG/R_scripts/Functions/england_full_clipped.shp") 
   
 
   formatLabel <- function(x) format(round(x, 3), nsmall = 2)

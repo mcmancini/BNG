@@ -29,8 +29,8 @@ library(dplyr)
 library(tidyr)
 
 #update path for different machines 
-gitpath <- "C:/Users/Rebecca/Documents/GitHub/BNG/" 
-datapath <- "C:/Users/Rebecca/OneDrive - University of Exeter/Data/BNG/"
+gitpath <- "C:/Users/rmc1d22/Documents/GitHub/BNG/" 
+datapath <- "C:/Users/rmc1d22/OneDrive - University of Southampton/Postdoc - Exeter/Data/BNG/"
 
 source(paste0(gitpath, '/R_scripts/Functions/fcn_plt_map_coloured_border.R'))
 
@@ -62,7 +62,7 @@ seer_2km <- seer_2km[, "new2kid"]
 # seer_2km <- seer_2km[seer_2km$new2kid %in% cell_id, 'new2kid']
 
 # Alternative when not on the network 
-Eng_2kid <- read.csv(paste0(gitpath, "Output/England_new_2kid.csv"))
+Eng_2kid <- read.csv(paste0(datapath, "DATA/SEER_GRID/England_new_2kid.csv"))
 
 seer_2km <- seer_2km %>% 
   dplyr::filter(new2kid %in% Eng_2kid$new2kid)
@@ -70,28 +70,28 @@ seer_2km <- seer_2km %>%
 ## 1.2. Offset locations, local offset
 ## -----------------------------------
 setwd(paste0(gitpath,'Output/'))
-local_bio_offset <- read.csv('local_bio_offset_urban_sprawl.csv')
+local_bio_offset <- read.csv('local_bio_offset_sng.csv')
 local_bio_offset <- merge(seer_2km, local_bio_offset, by='new2kid')
 
 ## 1.3. Offset locations, max biodiversity gains
 ## ---------------------------------------------
-max_bio_offset <- read.csv('max_bio_offset_urban_sprawl_2031.csv')
+max_bio_offset <- read.csv('max_bio_offset_sng.csv')
 max_bio_offset <- merge(seer_2km, max_bio_offset, by='new2kid')
 
 ## 1.4. Offset locations, max ecosystem services
 ## ---------------------------------------------
 # max_bio_offset <- read.csv('max_bio_offset_urban_sprawl_2031.csv') # all services 
-max_bio_offset <- read.csv('max_es_rec_ghg_only_offset_urban_sprawl_scc.csv') # flooding and water quality excluded
-max_bio_offset <- merge(seer_2km, max_bio_offset, by='new2kid')
+max_es_offset <- read.csv('max_es_offset_sng.csv') # flooding and water quality excluded
+max_es_offset <- merge(seer_2km, max_es_offset, by='new2kid')
 
 ## 1.5. Offset locations, equity weighted recreation
 ## -------------------------------------------------
-rec_mui_offset <- read.csv('max_rec_offset_urban_sprawl_equity_weighted.csv')
+rec_mui_offset <- read.csv('max_equity_offset_sng.csv')
 rec_mui_offset <- merge(seer_2km, rec_mui_offset, by='new2kid')
 
 ## 1.5. Offset locations, equity weighted recreation
 ## -------------------------------------------------
-min_cost_offset <- read.csv('min_cost_offset_urban_sprawl_2031.csv')
+min_cost_offset <- read.csv('min_cost_offset_sng.csv')
 min_cost_offset <- merge(seer_2km, min_cost_offset, by='new2kid')
 
 ## ========
@@ -116,12 +116,22 @@ df <- local_bio_offset
 local_bio <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
                                  column = 'offset_area_ha', 
                                  limits = c(0, 300),
-                                 plot_title = 'i', 
+                                 plot_title = '(i) Local offset', 
                                  legend_title = 'Offset area:',
-                                 legend_position = 'bottom', 
+                                 legend_position = 'none', 
                                  scale = 'magma',
                                  border_col = coul[1], 
                                  direction = -1)
+
+local_bio_legend <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
+                                        column = 'offset_area_ha', 
+                                        limits = c(0, 300),
+                                        plot_title = '(i) Local offset', 
+                                        legend_title = 'Offset area:',
+                                        legend_position = 'bottom', 
+                                        scale = 'magma',
+                                        border_col = coul[1], 
+                                        direction = -1)
 
 ## 2.2. Offset locations, max biodiversity gains
 ## ---------------------------------------------
@@ -134,7 +144,7 @@ df <- max_bio_offset
 max_bio <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
                                column = 'offset_area_ha', 
                                limits = c(0, 300),
-                               plot_title = 'ii', 
+                               plot_title = '(ii) Max. biodiversity', 
                                legend_title = 'Offset area:',
                                legend_position = 'none', 
                                scale = 'magma',
@@ -147,7 +157,7 @@ df <- max_es_offset
 max_es <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
                               column = 'offset_area_ha', 
                               limits = c(0, 300),
-                              plot_title = 'iii',
+                              plot_title = '(iii) Max. ecosystem services',
                               legend_title = 'Offset area:',
                               legend_position = 'none', 
                               scale = 'magma', 
@@ -162,7 +172,7 @@ df <- rec_mui_offset
 rec_mui <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
                                column = 'offset_area_ha', 
                                limits = c(0, 300),
-                               plot_title = 'iv', 
+                               plot_title = '(iv) Equity weighted', 
                                legend_title = 'Offset area:',
                                legend_position = 'none', 
                                scale = 'magma',
@@ -178,7 +188,7 @@ df <- min_cost_offset
 min_cost <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
                                column = 'offset_area_ha', 
                                limits = c(0, 300),
-                               plot_title = 'v', 
+                               plot_title = '(v) Max. food production', 
                                legend_title = 'Offset area:',
                                legend_position = 'none', 
                                scale = 'magma',
@@ -189,53 +199,27 @@ min_cost <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,],
 ## (2) Radar plot
 ## ==============
 
-all_data <- read.csv(paste0(gitpath,"Output/baseline_2031_urbanisation/all_scenario_offset_outputs.csv")) 
-
-total_sp_rich <- read.csv(paste0(gitpath, "Output/Figures/Scenario_total_sp_rich.csv"))
+all_data <- read.csv(paste0(gitpath,"Output/Figures/Scenario_benefits_summary_table_sng.csv")) 
 
 # install.packages("devtools")
 # devtools::install_github("ricardo-bion/ggradar")
 library(ggradar)
 
-# format data 
-
-# radar_df_benefits <- all_data %>%
-#   dplyr::filter(result_file == "benefits") %>%
-#   group_by(scenario) %>%
-#   dplyr::summarise(other_ben = (sum(total)-sum(rec)),
-#                    tot_rec = sum(rec))
-
-radar_df_benefits <- all_data %>% 
-  dplyr::filter(result_file == "benefits") %>% 
-  group_by(scenario) %>% 
-  dplyr::summarise(tot_rec = sum(rec),
-                   tot_ghg = (sum(ghg_farm)+sum(ghg_forestry)+sum(ghg_soil_forestry)),
-                   tot_flooding = sum(flooding),
-                   tot_wq = (sum(totn)+sum(totp))
-  )
-
-radar_df_bio <- all_data %>% 
-  dplyr::filter(result_file == "env_outs") %>% 
-  left_join(total_sp_rich, by = c("new2kid", "scenario")) %>%  #add in percentage change from 2000 LCM
-  group_by(scenario) %>% 
-  dplyr::summarise(mean_sr = mean(sr_perc_chg)) 
-
-radar_df_cost <- all_data %>% 
-  dplyr::filter(result_file == "costs") %>% 
-  dplyr::group_by(scenario) %>%
-  dplyr::summarise(tot_cost = sum(total))
-
 # join and scale the data 
-radar_df <- full_join(radar_df_benefits, radar_df_bio, by = "scenario") %>% 
-  full_join(radar_df_cost, by = "scenario") %>% 
-  dplyr::filter(scenario == "local_offset"|
+radar_df <- all_data %>% 
+    dplyr::filter(scenario == "local_offset"|
                   scenario == "max_bio" |
                   scenario == "max_es" |
                   scenario == "max_rec_equity_weighted" |
                   scenario == "min_cost") %>% 
+  dplyr::select(scenario, total_rec, Net_benefits, sr_perc_chg, total_costs) %>% 
+  dplyr::mutate(total_costs = total_costs*-1) %>% 
   as.data.frame()
 
+
 scenario <- c("Option 1", "Option 2", "Option 3", "Option 4", "Option 5")
+scenario <- c("Local offset", "Max. biodiversity", "Max. ecosystem services", "Equity weighted", "Max. food production")
+
 
 scenario <-as.data.frame(scenario)
 
@@ -261,8 +245,7 @@ radar <- ggradar(df_scaled,
                  label.gridline.mid = FALSE,
                  label.gridline.max = FALSE,
                  # axis labels customization
-                 # axis.labels = c("Net benefit", "Recreation", "Biodiversity", "Cost"),
-                 axis.labels = c("Max. recreation", "Max. GHG removal", "Max. flood risk reduction", "Max. water quality", "Max. biodiversity gain", "Min. food reduction"), 
+                 axis.labels = c("Max. recreation", "Max. net benefits", "Max. biodiversity", "Max. food production"),
                  axis.label.offset = 1.05,
                  axis.label.size = 3,
                  # line and point customization
@@ -318,7 +301,7 @@ radar <- ggradar(df_scaled,
     legend.box.spacing = unit(0.4, "cm"), 
     
     
-    plot.title = element_text(size = 11, hjust = 0, face = "bold")
+    plot.title = element_text(size = 8, hjust = 0, face = "bold")
     
   ) + 
   guides(colour = guide_legend(title.position="left", title.hjust = 0.1)) + 
@@ -331,120 +314,17 @@ radar
 ## (4) Bar charts
 ## ==============
 
-# 4.1. Load species rich data for summary 
-# ---------------------------------------
+lapply(all_data, class)
+all_data$scenario <- as.factor(all_data$scenario)
 
-sr_chg <- read.csv(paste0(gitpath, "Output/species_richness_change_2000-2031.csv")) 
-
-sr <- read.csv(paste0(gitpath, "Output/species_richness_2000.csv")) %>% 
-  left_join(sr_chg, by = "new2kid") %>% 
-  dplyr::mutate(sr_100_2031 = sr_100 + sr_chg_100) %>% 
-  dplyr::rename(sr_100_2000 = sr_100) %>% 
-  dplyr::select(-sr_chg_100)
-
-# identify the cells that experience change using the landscover
-lcm_agg_2000 <- read.csv(paste0(datapath,"Data/LCM/LCM_2km/lcm_aggr_2000.csv")) %>% 
-  dplyr::rename(farm_ha_2000 = farm_ha, 
-                wood_ha_2000 = wood_ha, 
-                sng_ha_2000 = sng_ha, 
-                urban_ha_2000 = urban_ha, 
-                water_ha_2000 = water_ha)
-
-urban_sprawl_2031 <- read.csv(paste0(datapath,"Data/Urban Sprawl - F.Eigenbrod/urban_sprawl_2031_sprawl.csv")) %>% 
-  dplyr::rename(farm_ha_2031 = farm_ha, 
-                wood_ha_2031 = wood_ha, 
-                sng_ha_2031 = sng_ha, 
-                urban_ha_2031 = urban_ha, 
-                water_ha_2031 = water_ha)
-
-lcm_2000_2031_chg <- left_join(lcm_agg_2000, urban_sprawl_2031, by = "new2kid") %>% 
-  filter(new2kid %in%  seer_2km$new2kid) %>% 
-  dplyr::mutate(farm_chg = ifelse((farm_ha_2000 - farm_ha_2031) != 0, 1, 0),
-                wood_chg = ifelse((wood_ha_2000 - wood_ha_2031) != 0, 1, 0),
-                sng_chg = ifelse((sng_ha_2000 - sng_ha_2031) != 0, 1, 0), 
-                urban_chg = ifelse((urban_ha_2000 - urban_ha_2031) != 0, 1, 0), 
-                water_chg = ifelse((water_ha_2000 - water_ha_2031) != 0, 1, 0),  
-                any_chg = ifelse((farm_chg + wood_chg + sng_chg + urban_chg + water_chg), 1, 0)
-  ) %>% 
-  dplyr::select(new2kid, any_chg)
-
-# baseline figures: 
-sr %>% 
-  filter(new2kid %in%  seer_2km$new2kid) %>% 
-  left_join(lcm_2000_2031_chg, by = "new2kid") %>% 
-  filter(any_chg == 1) %>% 
-  dplyr::mutate(sr_chg = sr_100_2031 - sr_100_2000, 
-                sr_perc_chg = ((sr_100_2031 - sr_100_2000)/sr_100_2000),
-                sr_perc_chg = replace_na(sr_perc_chg, 0)) %>%
-  summarise(sr_2000 = mean(sr_100_2000), 
-            sr_2030 = mean(sr_100_2031),
-            sr_chg = mean(sr_chg),
-            sr_perc_chg = mean(sr_perc_chg))
-
-
-# 4.2. Summarise benefits from outputs  
-# ------------------------------------
-
-total_benefits <- all_data %>%
-  filter(result_file == "benefits") %>% 
-  filter(hectares_chg > 0) %>% 
-  group_by(scenario) %>% 
-  summarise(total_benefits = sum(total), 
-            total_other_ben = sum(total)-sum(rec), 
-            total_rec = sum(rec))
-
-total_costs <- all_data %>%
-  filter(result_file == "costs") %>% 
-  filter(hectares_chg > 0) %>% 
-  group_by(scenario) %>% 
-  summarise(total_costs = sum(total))
-
-total_sp_rich <- all_data %>%
-  filter(result_file == "env_outs") %>%
-  left_join(sr, by = "new2kid") %>% 
-  dplyr::mutate(scen_bio = (sr_100_2031 + bio), 
-                sr_chg = (scen_bio - sr_100_2000), 
-                sr_perc_chg = ((scen_bio - sr_100_2000)/sr_100_2000),
-                sr_perc_chg = replace_na(sr_perc_chg, 0),
-                sr_ha = ifelse(hectares_chg > 0, ((scen_bio - sr_100_2000)/hectares_chg),0),
-                sr_ha = replace_na(sr_ha, 0),
-                sr_perc_chg_ha = ifelse(hectares_chg > 0, (sr_perc_chg/hectares_chg),0), 
-                sr_perc_chg_ha = replace_na(sr_perc_chg_ha, 0)) %>% 
-  dplyr::select(new2kid, scenario, sr_chg, scen_bio, sr_perc_chg, sr_ha, hectares_chg) 
-
-
-total_sp_rich_sum_tbl <- total_sp_rich %>%
-  filter(hectares_chg > 0) %>% 
-  group_by(scenario) %>% 
-  summarise(sr_chg = mean(sr_chg),
-            sr_perc_chg = mean(sr_perc_chg),
-            sr = mean(scen_bio), 
-            sr_ha = mean(sr_ha)) %>% 
-  as.data.frame()
-
-## 4.3 Make summary table 
-## ----------------------
-benefits <- full_join(total_benefits, total_costs, by = "scenario") %>% 
-  dplyr::mutate(net_ben = total_benefits - total_costs) %>% 
-  full_join(total_sp_rich_sum_tbl, by = "scenario") %>% 
-  dplyr::rename(BNG.policy.option = scenario) 
-
-
-## 4.4 filter and reshape 
-## ----------------------
-lapply(benefits, class)
-benefits$BNG.policy.option <- as.factor(benefits$BNG.policy.option)
-
-# http://www.cookbook-r.com/Manipulating_data/Converting_data_between_wide_and_long_format/ 
-dat <- benefits %>%
-  dplyr::select(-sr_chg, -total_benefits, -total_other_ben, - sr, -sr_ha) %>%
-  filter(BNG.policy.option != "max_rec") %>% 
-  filter(BNG.policy.option != "max_es_equity_weighted") %>% 
-  mutate(BNG.policy.option = case_when(BNG.policy.option == "local_offset" ~ "Option 1",
-                                       BNG.policy.option == "max_bio" ~ "Option 2",
-                                       BNG.policy.option == "max_es" ~ "Option 3",
-                                       BNG.policy.option == "max_rec_equity_weighted" ~ "Option 4",
-                                       BNG.policy.option == "min_cost" ~ "Option 5")) %>% 
+bc_dat <- all_data %>% 
+  dplyr::select(scenario, total_rec, total_costs, Net_benefits, sr_perc_chg) %>%
+  filter(scenario != "max_netES") %>% 
+  mutate(scenario_nm = case_when(scenario == "local_offset" ~ "Local offset",
+                                       scenario == "max_bio" ~ "Max. biodiversity",
+                                       scenario == "max_es" ~ "Max. ecosystem services",
+                                       scenario == "max_rec_equity_weighted" ~ "Equity weighted",
+                                       scenario == "min_cost" ~ "Max. food production")) %>% 
   gather("benefit", "value", total_rec:sr_perc_chg, factor_key=TRUE) %>% 
   dplyr::mutate(montetary_val = ifelse(benefit != "sr_perc_chg", 1, 0))
 
@@ -457,79 +337,105 @@ colors_border <- coul
 #define hlines 
 BNG_threshold <- 10
 
-III <- dat %>% 
+I <- bc_dat %>% 
   filter(benefit == "sr_perc_chg") %>% 
   mutate(value = value*100) %>%  
-  ggplot(aes(x = reorder(BNG.policy.option, desc(BNG.policy.option)), y = value, fill = BNG.policy.option)) + 
+  ggplot(aes(x = reorder(scenario_nm, desc(scenario_nm)), y = value, fill = scenario_nm)) + 
+  geom_bar(stat = "identity", colour = NA) +
+  # annotate("text", x = "Option 4", y = BNG_threshold, label = "10% BNG threshold", vjust = 0, hjust = 1.1, col = "red") + 
+  # geom_hline(aes(yintercept = BNG_threshold),linetype = 'dashed', col = 'red') + 
+  coord_flip() +
+  ylab("Species richness change (%)") + 
+  xlab("") + 
+  ggtitle("(iii)") +
+  scale_fill_manual(values = colors_border, name = NULL) + 
+  scale_y_continuous(n.breaks = 6) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
+        legend.position="bottom", 
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        plot.title = element_text(size = 8, face = "bold"),
+        axis.title = element_text(size = 8)) 
+
+
+bc_sr <- bc_dat %>% 
+  filter(benefit == "sr_perc_chg") %>% 
+  mutate(value = value*100) %>%  
+  ggplot(aes(x = reorder(scenario_nm, desc(scenario_nm)), y = value, fill = scenario_nm)) + 
   geom_bar(stat = "identity", colour = NA) +
   # annotate("text", x = "Option 4", y = BNG_threshold, label = "10% BNG threshold", vjust = 0, hjust = 1.1, col = "red") + 
   # geom_hline(aes(yintercept = BNG_threshold),linetype = 'dashed', col = 'red') + 
   coord_flip() +
     ylab("Species richness change (%)") + 
   xlab("") + 
-  ggtitle("iii") +
+  ggtitle("(iii)") +
   scale_fill_manual(values = colors_border ) + 
   scale_y_continuous(n.breaks = 6) +
   theme_bw() +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
-        legend.position="right", 
-        axis.text.y = element_text(colour = "black"),
-        plot.title = element_text(size = 11, face = "bold"),
-        axis.title = element_text(size = 9)) 
+        legend.position="none", 
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        plot.title = element_text(size = 8, face = "bold"),
+        axis.title = element_text(size = 8)) 
 
-I <- dat %>% 
-  filter(benefit == "net_ben") %>% 
+bc_netben <- bc_dat %>% 
+  filter(benefit == "Net_benefits") %>% 
   mutate(value = value/1000000000) %>%  
-  ggplot(aes(x = reorder(BNG.policy.option, desc(BNG.policy.option)), y = value, fill = BNG.policy.option)) +  
+  ggplot(aes(x = reorder(scenario_nm, desc(scenario_nm)), y = value, fill = scenario_nm)) +  
   geom_bar(stat = "identity", colour = NA) +
   coord_flip() +
   ylab("Net benefit (£ billion)") + 
   xlab("") + 
-  ggtitle("i") +
+  ggtitle("(ii)") +
   scale_fill_manual(values = colors_border ) +
   scale_y_continuous(n.breaks = 6) + # use labels to redefine 
   theme_bw() +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
         legend.position="none", 
-        axis.text.y = element_text(colour = "black"),
-        plot.title = element_text(size = 11, face = "bold"),
-        axis.title = element_text(size = 9)) 
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        plot.title = element_text(size = 8, face = "bold"),
+        axis.title = element_text(size = 8)) 
 
-II <- dat %>% 
+bc_rec <- bc_dat %>% 
   filter(benefit == "total_rec") %>% 
   mutate(value = value/1000000) %>%  
-  ggplot(aes(x = reorder(BNG.policy.option, desc(BNG.policy.option)), y = value, fill = BNG.policy.option)) +  
+  ggplot(aes(x = reorder(scenario_nm, desc(scenario_nm)), y = value, fill = scenario_nm)) +  
   geom_bar(stat = "identity", colour = NA) +
   coord_flip() +
   ylab("Recreation benefit (£ million)") + 
   xlab("") + 
-  ggtitle("ii") +
+  ggtitle("(i)") +
   scale_fill_manual(values = colors_border ) + 
   scale_y_continuous(n.breaks = 6) + # use labels to redefine 
   theme_bw() +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
         legend.position="none",
-        axis.text.y = element_text(colour = "black"),
-        plot.title = element_text(size = 11, face = "bold"),
-        axis.title = element_text(size = 9))
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        plot.title = element_text(size = 8, face = "bold"),
+        axis.title = element_text(size = 8))
 
-IV <- dat %>% 
+bc_food <- bc_dat %>% 
   filter(benefit == "total_costs") %>% 
   mutate(value = value/1000000000) %>%  
-  ggplot(aes(x = reorder(BNG.policy.option, desc(BNG.policy.option)), y = value, fill = BNG.policy.option)) + 
+  ggplot(aes(x = reorder(scenario_nm, desc(scenario_nm)), y = value, fill = scenario_nm)) + 
   geom_bar(stat = "identity", colour = NA) +
   coord_flip() +
   ylab("Cost (£ billion)") + 
   xlab("") + 
-  ggtitle("iv") +
+  ggtitle("(iv)") +
   scale_fill_manual(values = colors_border ) + 
   scale_y_continuous(n.breaks = 6) + # use labels to redefine 
   theme_bw() +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
         legend.position="none",
-        axis.text.y = element_text(colour = "black"),
-        plot.title = element_text(size = 11, face = "bold"),
-        axis.title = element_text(size = 9)) 
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        plot.title = element_text(size = 8, face = "bold"),
+        axis.title = element_text(size = 8)) 
 
 ## ===============
 ## (5) FACET PLOTS
@@ -554,45 +460,42 @@ get_only_legend <- function(plot) {
 }
 
 radar_legend <- get_only_legend(radar)
-maps_legend <- get_only_legend(local_bio)
-# bar_legend <- get_only_legend(I)
+maps_legend <- get_only_legend(local_bio_legend)
+bar_legend <- get_only_legend(I)
 
 
 ## 5.1 Maps
 ## --------
-maps <- ggarrange(local_bio, max_bio,  max_es, rec_mui, min_cost,
-                  ncol = 1, nrow = 5,  
-                  common.legend = TRUE,
-                  legend = 'none') + 
+maps <- ggarrange(local_bio, max_bio,  max_es, rec_mui, min_cost, maps_legend,
+                  ncol = 2, nrow = 3) + 
   bgcolor("white") + 
   border("white")
 
-maps_with_legend <- ggarrange(maps, maps_legend, 
-                  ncol = 1, nrow = 2, 
-                  heights =  c(1, 0.1))
+# maps_with_legend <- ggarrange(maps, maps_legend, 
+#                   ncol = 1, nrow = 2, 
+#                   heights =  c(1, 0.1))
 
 # Note: unable to add black box to the colour bar 
 # https://stackoverflow.com/questions/50070741/draw-border-around-legend-continuous-gradient-color-bar-of-heatmap 
 
 save_path <- paste0(gitpath,'Output/Maps/')
-filename <- 'facet_maps.jpeg'
-ggsave(filename=filename, plot = maps_with_legend, device = "jpeg",
-       path = save_path, units = "mm", height = 200, width = 61) 
+filename <- '230214_facet_maps_sng.jpeg'
+ggsave(filename=filename, plot = maps, device = "jpeg",
+       path = save_path, units = "mm", height = 200, width = 183) 
 
 ## 5.2 Barcharts
 ## -------------
 
-barcharts <- ggarrange(I, II, III, IV, 
+barcharts <- ggarrange(bc_rec, bc_netben, bc_sr, bc_food, 
                       ncol = 2, nrow = 2,
                       common.legend = TRUE,
                       legend = 'none') + 
   bgcolor("white") + 
   border("white")
 
-save_path <- paste0(gitpath,'Output/Figures/')
-filename <- 'biodiversity_offset_locations_benefits_chart.jpeg'
-ggsave(filename=filename, plot = barcharts, device = "jpeg",
-       path = save_path) 
+barchart_with_leg <- ggarrange(barcharts, bar_legend,  
+                               ncol = 1, nrow = 2, 
+                               heights = c(1,0.1))
 
 
 ## 5.2 Barcharts and radar
@@ -600,7 +503,7 @@ ggsave(filename=filename, plot = barcharts, device = "jpeg",
 
 bar_radar <- ggarrange(radar, barcharts, 
                        ncol = 1, nrow = 2,
-                       heights = c(1,1), 
+                       heights = c(1, 1), 
                        common.legend = TRUE,
                        legend = 'none', 
                        labels = c("b", "c")) + 
@@ -608,40 +511,23 @@ bar_radar <- ggarrange(radar, barcharts,
   border("white")
 
 
-## 5.3 Maps and radar only
-## -----------------------
-
-# maps_radar <- ggarrange(local_bio, max_bio,  max_es, rec_mui, min_cost, radar,
-#                   ncol = 2, nrow = 3,
-#                   common.legend = FALSE,
-#                   legend = 'none', 
-#                   labels = c("a", "b", "c", "d", "e", "f")) + 
-#   bgcolor("white") + 
-#   border("white")
-# 
-# figure.2 <- grid.arrange(maps_radar, radar_legend, maps_legend, nrow = 3, heights = c(10, 0.5, 0.5))
-# 
-# save_path <- paste0(gitpath,'Output/Maps/')
-# filename <- 'biodiversity_offset_locations_with_radar.jpeg'
-# ggsave(filename=filename, plot = figure.2, device = "jpeg",
-#        path = save_path, units = "in", height = 16, width = 12) 
 
 ## 5.4 Portrait all figures
 ## ------------------------
 
-all_portrait <- ggarrange(maps_with_legend, bar_radar, 
+all_fig <- ggarrange(maps, bar_radar, 
                          ncol = 2, nrow = 1,
                          heights = c(1),
-                         widths = c(0.5, 1),
+                         widths = c(0.8, 1),
                          labels = c("a","")) 
 
-all_portrait_legends <- ggarrange(all_portrait, radar_legend, 
+all_fig_legends <- ggarrange(all_fig, bar_legend, 
                                   ncol = 1, nrow = 2, 
                                   heights = c(1, 0.1))
 
 save_path <- paste0(gitpath,'Output/Maps/')
-filename <- 'biodiversity_offset_locations_with_radar_bars_portrait.jpeg'
-ggsave(filename=filename, plot = all_portrait_legends, device = "jpeg",
-       path = save_path, units = "mm", height = 200, width = 183) 
+filename <- '230214_biodiversity_offset_locations_with_radar_bars_portrait.jpeg'
+ggsave(filename=filename, plot = all_fig_legends, device = "jpeg",
+       path = save_path, units = "mm", height = 183, width = 247) 
 # max height = 247 mm
 
