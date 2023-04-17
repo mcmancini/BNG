@@ -32,7 +32,7 @@ library(tidyr)
 gitpath <- "C:/Users/rmc1d22/Documents/GitHub/BNG/" 
 datapath <- "C:/Users/rmc1d22/OneDrive - University of Southampton/Postdoc - Exeter/Data/BNG/"
 
-source(paste0(gitpath, '/R_scripts/Functions/fcn_plt_map_coloured_border.R'))
+source(paste0(gitpath, '/R_scripts/Functions/fcn_plt_map_coloured_border_2.R'))
 
 ## (1) LOAD THE DATA
 ##     1.1. - SEER 2km grid
@@ -81,7 +81,7 @@ max_bio_offset <- merge(seer_2km, max_bio_offset, by='new2kid')
 ## 1.4. Offset locations, max ecosystem services
 ## ---------------------------------------------
 # max_bio_offset <- read.csv('max_bio_offset_urban_sprawl_2031.csv') # all services 
-max_es_offset <- read.csv('max_es_offset_sng.csv') # flooding and water quality excluded
+max_es_offset <- read.csv('max_netES_offset_sng.csv') # flooding and water quality excluded
 max_es_offset <- merge(seer_2km, max_es_offset, by='new2kid')
 
 ## 1.5. Offset locations, equity weighted recreation
@@ -101,22 +101,22 @@ min_cost_offset <- merge(seer_2km, min_cost_offset, by='new2kid')
 ## 2.1. Offset locations, local offset
 ## -----------------------------------
 
-coul <-viridis(5,option = "viridis",) 
-
 library(RColorBrewer)
 display.brewer.all(colorblindFriendly = TRUE)
-coul <- brewer.pal(5, "Dark2") # Set2 is okay 
+brewer.pal(4, "Dark2") # Set2 is okay 
+
+coul <- c("black","#1B9E77","#D95F02","#7570B3","#E7298A")
 
 
-source(paste0(gitpath, '/R_scripts/Functions/fcn_plt_map_coloured_border.R'))
+source(paste0(gitpath, '/R_scripts/Functions/fcn_plt_map_coloured_border_2.R'))
 
 
 df <- local_bio_offset
 # update data paths in the function if this doesnt work  
 local_bio <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
                                  column = 'offset_area_ha', 
-                                 limits = c(0, 300),
-                                 plot_title = '(i) Local offset', 
+                                 limits = c(0, 500),
+                                 plot_title = '(1) Local offset (status quo)', 
                                  legend_title = 'Offset area:',
                                  legend_position = 'none', 
                                  scale = 'magma',
@@ -126,7 +126,7 @@ local_bio <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,],
 local_bio_legend <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
                                         column = 'offset_area_ha', 
                                         limits = c(0, 300),
-                                        plot_title = '(i) Local offset', 
+                                        plot_title = '(1) Local offset (status quo)', 
                                         legend_title = 'Offset area:',
                                         legend_position = 'bottom', 
                                         scale = 'magma',
@@ -137,31 +137,45 @@ local_bio_legend <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,],
 ## ---------------------------------------------
 
 # define the boarder colour 
-colors_border <- coul[2]
+colors_border <- coul[1]
 
 df <- max_bio_offset
 
 max_bio <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
                                column = 'offset_area_ha', 
                                limits = c(0, 300),
-                               plot_title = '(ii) Max. biodiversity', 
+                               plot_title = '(2) Maximise biodiversity', 
                                legend_title = 'Offset area:',
                                legend_position = 'none', 
                                scale = 'magma',
                                border_col = coul[2], 
                                direction = -1)
 
-## 2.3. Offset locations, max household WTP
+## 2.3. Offset locations, min cost
+## -------------------------------
+df <- min_cost_offset
+
+min_cost <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
+                                column = 'offset_area_ha', 
+                                limits = c(0, 300),
+                                plot_title = '(3) Minimise costs', 
+                                legend_title = 'Offset area:',
+                                legend_position = 'none', 
+                                scale = 'magma',
+                                border_col = coul[3],
+                                direction = -1)
+
+## 2.4. Offset locations, max household WTP
 ## ----------------------------------------
 df <- max_es_offset
 max_es <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
                               column = 'offset_area_ha', 
                               limits = c(0, 300),
-                              plot_title = '(iii) Max. ecosystem services',
+                              plot_title = '(4) Maximise (non-biodiveristy) co-benefits minus cost',
                               legend_title = 'Offset area:',
                               legend_position = 'none', 
                               scale = 'magma', 
-                              border_col = coul[3], 
+                              border_col = coul[4], 
                               direction = -1)
 
 
@@ -172,28 +186,16 @@ df <- rec_mui_offset
 rec_mui <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
                                column = 'offset_area_ha', 
                                limits = c(0, 300),
-                               plot_title = '(iv) Equity weighted', 
-                               legend_title = 'Offset area:',
-                               legend_position = 'none', 
-                               scale = 'magma',
-                               border_col = coul[4],
-                               direction = -1)
-
-   
-
-## 2.5. Offset locations, min cost
-## -------------------------------
-df <- min_cost_offset
-
-min_cost <- fcn_continuous_plot(plot_data = df[df$offset_area_ha > 0,], 
-                               column = 'offset_area_ha', 
-                               limits = c(0, 300),
-                               plot_title = '(v) Max. food production', 
+                               plot_title = '(5) Maximise equity weighted co-benefits', 
                                legend_title = 'Offset area:',
                                legend_position = 'none', 
                                scale = 'magma',
                                border_col = coul[5],
                                direction = -1)
+
+   
+
+
 
 ## ==============
 ## (2) Radar plot
@@ -206,19 +208,21 @@ all_data <- read.csv(paste0(gitpath,"Output/Figures/Scenario_benefits_summary_ta
 library(ggradar)
 
 # join and scale the data 
+
+all_data$scenario <- ordered(all_data$scenario, levels = c("local_offset", "max_bio", "min_cost", "max_netES", "max_rec_equity_weighted", "max_es" ))
+
 radar_df <- all_data %>% 
     dplyr::filter(scenario == "local_offset"|
                   scenario == "max_bio" |
-                  scenario == "max_es" |
-                  scenario == "max_rec_equity_weighted" |
-                  scenario == "min_cost") %>% 
-  dplyr::select(scenario, total_rec, Net_benefits, sr_perc_chg, total_costs) %>% 
+                  scenario == "min_cost"|
+                  scenario == "max_netES" |
+                  scenario == "max_rec_equity_weighted") %>% 
+  dplyr::select(scenario,sr_perc_chg , Net_benefits, total_rec, total_costs) %>% 
   dplyr::mutate(total_costs = total_costs*-1) %>% 
   as.data.frame()
 
-
-scenario <- c("Option 1", "Option 2", "Option 3", "Option 4", "Option 5")
-scenario <- c("Local offset", "Max. biodiversity", "Max. ecosystem services", "Equity weighted", "Max. food production")
+scenario <- c("Option 1", "Option 2", "Option 3", "Option 4", "Option 5") # use options to ensure the colours are in the same order as all other figures
+# scenario <- c("Local offset", "Max. biodiversity", "Max. ecosystem services", "Equity weighted", "Max. food production")
 
 
 scenario <-as.data.frame(scenario)
@@ -231,7 +235,6 @@ head(df_scaled)
 # Set graphic colors
 # coul <-viridis(5,option = "viridis",) 
 colors_border <- coul
-colors_in <- alpha(coul,0.8)
 
 #plot 
 radar <- ggradar(df_scaled,
@@ -245,7 +248,7 @@ radar <- ggradar(df_scaled,
                  label.gridline.mid = FALSE,
                  label.gridline.max = FALSE,
                  # axis labels customization
-                 axis.labels = c("Max. recreation", "Max. net benefits", "Max. biodiversity", "Max. food production"),
+                 axis.labels = c("Maximum biodiversity", "Maximum co-benefits minus costs", "Maximum equity weighted co-benefits", "Minimum costs"),
                  axis.label.offset = 1.05,
                  axis.label.size = 3,
                  # line and point customization
@@ -315,18 +318,24 @@ radar
 ## ==============
 
 lapply(all_data, class)
-all_data$scenario <- as.factor(all_data$scenario)
+# all_data$scenario <- ordered(all_data$scenario, levels = c("local_offset", "max_bio", "max_es", "max_netES", "max_rec_equity_weighted", "min_cost"))
 
 bc_dat <- all_data %>% 
   dplyr::select(scenario, total_rec, total_costs, Net_benefits, sr_perc_chg) %>%
-  filter(scenario != "max_netES") %>% 
-  mutate(scenario_nm = case_when(scenario == "local_offset" ~ "Local offset",
-                                       scenario == "max_bio" ~ "Max. biodiversity",
-                                       scenario == "max_es" ~ "Max. ecosystem services",
-                                       scenario == "max_rec_equity_weighted" ~ "Equity weighted",
-                                       scenario == "min_cost" ~ "Max. food production")) %>% 
+  filter(scenario != "max_es") %>% 
+  mutate(scenario_nm = case_when(scenario == "local_offset" ~ "Local offset (status quo)",
+                                       scenario == "max_bio" ~ "Maximise biodiversity",
+                                       scenario == "max_netES" ~ "Maximise (non-biodiveristy) co-benefits minus costs",
+                                       scenario == "max_rec_equity_weighted" ~ "Maximise equity weighted co-benefits",
+                                       scenario == "min_cost" ~ "Minimise costs")) %>% 
   gather("benefit", "value", total_rec:sr_perc_chg, factor_key=TRUE) %>% 
   dplyr::mutate(montetary_val = ifelse(benefit != "sr_perc_chg", 1, 0))
+
+bc_dat$scenario_nm <- ordered(bc_dat$scenario_nm, levels = c("Local offset (status quo)",
+                                                             "Maximise biodiversity",
+                                                             "Minimise costs", 
+                                                             "Maximise (non-biodiveristy) co-benefits minus costs", 
+                                                             "Maximise equity weighted co-benefits"))
 
 ## 4.3 Plot barcharts 
 ## ------------------
@@ -337,105 +346,130 @@ colors_border <- coul
 #define hlines 
 BNG_threshold <- 10
 
-I <- bc_dat %>% 
-  filter(benefit == "sr_perc_chg") %>% 
-  mutate(value = value*100) %>%  
-  ggplot(aes(x = reorder(scenario_nm, desc(scenario_nm)), y = value, fill = scenario_nm)) + 
+I <- bc_dat %>%
+  filter(benefit == "sr_perc_chg") %>%
+  mutate(value = value*100) %>%
+  ggplot(aes(x = reorder(scenario_nm, dplyr::desc(scenario_nm)), y = value, fill = scenario_nm)) +
   geom_bar(stat = "identity", colour = NA) +
-  # annotate("text", x = "Option 4", y = BNG_threshold, label = "10% BNG threshold", vjust = 0, hjust = 1.1, col = "red") + 
-  # geom_hline(aes(yintercept = BNG_threshold),linetype = 'dashed', col = 'red') + 
+  # annotate("text", x = "Option 4", y = BNG_threshold, label = "10% BNG threshold", vjust = 0, hjust = 1.1, col = "red") +
+  # geom_hline(aes(yintercept = BNG_threshold),linetype = 'dashed', col = 'red') +
   coord_flip() +
-  ylab("Species richness change (%)") + 
-  xlab("") + 
-  ggtitle("(iii)") +
-  scale_fill_manual(values = colors_border, name = NULL) + 
+  ylab("Species richness change (%)") +
+  xlab("") +
+  ggtitle("(1) Biodiversity gain") +
+  scale_fill_manual(values = colors_border, name = NULL) +
   scale_y_continuous(n.breaks = 6) +
   theme_bw() +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
-        legend.position="bottom", 
-        axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        plot.title = element_text(size = 8, face = "bold"),
-        axis.title = element_text(size = 8)) 
-
-
-bc_sr <- bc_dat %>% 
-  filter(benefit == "sr_perc_chg") %>% 
-  mutate(value = value*100) %>%  
-  ggplot(aes(x = reorder(scenario_nm, desc(scenario_nm)), y = value, fill = scenario_nm)) + 
-  geom_bar(stat = "identity", colour = NA) +
-  # annotate("text", x = "Option 4", y = BNG_threshold, label = "10% BNG threshold", vjust = 0, hjust = 1.1, col = "red") + 
-  # geom_hline(aes(yintercept = BNG_threshold),linetype = 'dashed', col = 'red') + 
-  coord_flip() +
-    ylab("Species richness change (%)") + 
-  xlab("") + 
-  ggtitle("(iii)") +
-  scale_fill_manual(values = colors_border ) + 
-  scale_y_continuous(n.breaks = 6) +
-  theme_bw() +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
-        legend.position="none", 
-        axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        plot.title = element_text(size = 8, face = "bold"),
-        axis.title = element_text(size = 8)) 
-
-bc_netben <- bc_dat %>% 
-  filter(benefit == "Net_benefits") %>% 
-  mutate(value = value/1000000000) %>%  
-  ggplot(aes(x = reorder(scenario_nm, desc(scenario_nm)), y = value, fill = scenario_nm)) +  
-  geom_bar(stat = "identity", colour = NA) +
-  coord_flip() +
-  ylab("Net benefit (£ billion)") + 
-  xlab("") + 
-  ggtitle("(ii)") +
-  scale_fill_manual(values = colors_border ) +
-  scale_y_continuous(n.breaks = 6) + # use labels to redefine 
-  theme_bw() +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
-        legend.position="none", 
-        axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        plot.title = element_text(size = 8, face = "bold"),
-        axis.title = element_text(size = 8)) 
-
-bc_rec <- bc_dat %>% 
-  filter(benefit == "total_rec") %>% 
-  mutate(value = value/1000000) %>%  
-  ggplot(aes(x = reorder(scenario_nm, desc(scenario_nm)), y = value, fill = scenario_nm)) +  
-  geom_bar(stat = "identity", colour = NA) +
-  coord_flip() +
-  ylab("Recreation benefit (£ million)") + 
-  xlab("") + 
-  ggtitle("(i)") +
-  scale_fill_manual(values = colors_border ) + 
-  scale_y_continuous(n.breaks = 6) + # use labels to redefine 
-  theme_bw() +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
-        legend.position="none",
+        legend.position="left",
         axis.text.y = element_blank(),
         axis.ticks.y = element_blank(),
         plot.title = element_text(size = 8, face = "bold"),
         axis.title = element_text(size = 8))
 
-bc_food <- bc_dat %>% 
-  filter(benefit == "total_costs") %>% 
-  mutate(value = value/1000000000) %>%  
-  ggplot(aes(x = reorder(scenario_nm, desc(scenario_nm)), y = value, fill = scenario_nm)) + 
+
+bc_sr <- bc_dat %>% 
+  filter(benefit == "sr_perc_chg") %>% 
+  mutate(value = value*100) %>%  
+  ggplot(aes(x = reorder(scenario_nm, dplyr::desc(scenario_nm)), y = value, fill = scenario_nm)) + 
   geom_bar(stat = "identity", colour = NA) +
   coord_flip() +
-  ylab("Cost (£ billion)") + 
+  ylab("Species richness change (%)") + 
+  scale_y_continuous(expand = c(0, 0), n.breaks = 6) +
   xlab("") + 
-  ggtitle("(iv)") +
+  ggtitle("(1) Biodiversity gain") +
   scale_fill_manual(values = colors_border ) + 
-  scale_y_continuous(n.breaks = 6) + # use labels to redefine 
   theme_bw() +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
         legend.position="none",
         axis.text.y = element_blank(),
         axis.ticks.y = element_blank(),
-        plot.title = element_text(size = 8, face = "bold"),
-        axis.title = element_text(size = 8)) 
+        axis.text.x = element_text(colour = "black", size = 8),
+        axis.ticks = element_line(colour = "black", linewidth = 0.5), 
+        panel.border = element_blank(),
+        axis.line.y.left = element_line(colour = "white"), 
+        axis.line.x.bottom = element_line(colour = "black", linewidth = 1), 
+        plot.title = element_text(size = 10, face = "bold"),
+        axis.title = element_text(size = 10)) + 
+  geom_hline(aes(yintercept = 0),linetype = 'solid', col = 'black', linewidth = 1.5)
+
+
+bc_netben <- bc_dat %>% 
+  filter(benefit == "Net_benefits") %>% 
+  mutate(value = value/1000000000) %>%  
+  ggplot(aes(x = reorder(scenario_nm, dplyr::desc(scenario_nm)), y = value, fill = scenario_nm)) +  
+  geom_bar(stat = "identity", colour = NA) +
+  coord_flip() +
+  ylab("Net benefit (£ billion)") + 
+  xlab("") + 
+  ggtitle("(4) Co-benefits minus costs") +
+  scale_fill_manual(values = colors_border ) +
+  scale_y_continuous(expand = c(0, 0), n.breaks = 6) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
+        legend.position="none",
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text.x = element_text(colour = "black", size = 8),
+        axis.ticks = element_line(colour = "black", linewidth = 1), 
+        panel.border = element_blank(),
+        axis.line.y.left = element_line(colour = "white"), 
+        axis.line.x.bottom = element_line(colour = "black", linewidth = 0.5), 
+        plot.title = element_text(size = 10, face = "bold"),
+        axis.title = element_text(size = 10)) + 
+  geom_hline(aes(yintercept = 0),linetype = 'solid', col = 'black', linewidth = 1.5)
+
+bc_rec <- bc_dat %>% 
+  filter(benefit == "total_rec") %>% 
+  mutate(value = value/1000000) %>%  
+  ggplot(aes(x = reorder(scenario_nm, dplyr::desc(scenario_nm)), y = value, fill = scenario_nm)) +  
+  geom_bar(stat = "identity", colour = NA) +
+  coord_flip() +
+  ylab("Recreation benefit (£ million)") + 
+  xlab("") + 
+  ggtitle("(3) Co-benefits") +
+  scale_fill_manual(values = colors_border ) + 
+  scale_y_continuous(expand = c(0, 0), n.breaks = 6) +
+  geom_hline(aes(yintercept = 0),linetype = 'solid', col = 'black') +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
+        legend.position="none",
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text.x = element_text(colour = "black", size = 8),
+        axis.ticks = element_line(colour = "black", linewidth = 1), 
+        panel.border = element_blank(),
+        axis.line.y.left = element_line(colour = "white"), 
+        axis.line.x.bottom = element_line(colour = "black", linewidth = 0.5), 
+        plot.title = element_text(size = 10, face = "bold"),
+        axis.title = element_text(size = 10)) + 
+  geom_hline(aes(yintercept = 0),linetype = 'solid', col = 'black', linewidth = 1.5)
+
+
+bc_food <- bc_dat %>% 
+  filter(benefit == "total_costs") %>% 
+  mutate(value = -1*value/1000000000) %>%  
+  ggplot(aes(x = reorder(scenario_nm, dplyr::desc(scenario_nm)), y = value, fill = scenario_nm)) + 
+  geom_bar(stat = "identity", colour = NA) +
+  coord_flip() +
+  ylab("Costs (£ billion)") + 
+  xlab("") + 
+  ggtitle("(2) Costs") +
+  scale_fill_manual(values = colors_border ) + 
+  scale_y_continuous(expand = c(0,0), n.breaks = 6) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
+        legend.position="none",
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text.x = element_text(colour = "black", size = 8),
+        axis.ticks = element_line(colour = "black", linewidth = 1), 
+        panel.border = element_blank(),
+        axis.line.y.left = element_line(colour = "white"), 
+        axis.line.x.bottom = element_line(colour = "black", linewidth = 0.5), 
+        plot.title = element_text(size = 10, face = "bold"),
+        axis.title = element_text(size = 10)) + 
+  geom_hline(aes(yintercept = 0),linetype = 'solid', col = 'black', linewidth = 1.5)
 
 ## ===============
 ## (5) FACET PLOTS
@@ -466,10 +500,11 @@ bar_legend <- get_only_legend(I)
 
 ## 5.1 Maps
 ## --------
-maps <- ggarrange(local_bio, max_bio,  max_es, rec_mui, min_cost, maps_legend,
+maps <- ggarrange(local_bio, max_bio, min_cost, max_es, rec_mui, maps_legend, 
                   ncol = 2, nrow = 3) + 
   bgcolor("white") + 
   border("white")
+
 
 # maps_with_legend <- ggarrange(maps, maps_legend, 
 #                   ncol = 1, nrow = 2, 
@@ -478,10 +513,10 @@ maps <- ggarrange(local_bio, max_bio,  max_es, rec_mui, min_cost, maps_legend,
 # Note: unable to add black box to the colour bar 
 # https://stackoverflow.com/questions/50070741/draw-border-around-legend-continuous-gradient-color-bar-of-heatmap 
 
-save_path <- paste0(gitpath,'Output/Maps/')
-filename <- '230214_facet_maps_sng.jpeg'
-ggsave(filename=filename, plot = maps, device = "jpeg",
-       path = save_path, units = "mm", height = 200, width = 183) 
+save_path <- paste0(gitpath,'Output/Figures/Figures_for_paper/')
+filename <- '230214_facet_maps_sng.png'
+ggsave(filename=filename, plot = maps, device = "png",
+       path = save_path, units = "mm", height = 210, width = 297, dpi = 1200) 
 
 ## 5.2 Barcharts
 ## -------------
@@ -525,9 +560,33 @@ all_fig_legends <- ggarrange(all_fig, bar_legend,
                                   ncol = 1, nrow = 2, 
                                   heights = c(1, 0.1))
 
-save_path <- paste0(gitpath,'Output/Maps/')
-filename <- '230214_biodiversity_offset_locations_with_radar_bars_portrait.jpeg'
-ggsave(filename=filename, plot = all_fig_legends, device = "jpeg",
-       path = save_path, units = "mm", height = 183, width = 247) 
+save_path <- paste0(gitpath,'Output/Figures/Figures_for_paper/')
+filename <- '230214_biodiversity_offset_locations_with_radar_bars_portrait.png'
+ggsave(filename=filename, plot = all_fig_legends, device = "png",
+       path = save_path, units = "mm", height = 210, width = 297, dpi = 1200) 
 # max height = 247 mm
 
+## ===============
+## editable export
+## ===============
+
+install.packages("export")
+library(export)
+
+save_path <- paste0(gitpath,'Output/Figures/Figures_for_paper/')
+# maps 
+ggsave(local_bio, file=paste0(save_path,"map_local_bio.png"), width=7, height=5)
+ggsave(max_bio, file=paste0(save_path,"map_max_bio.png"), width=7, height=5)
+ggsave(min_cost, file=paste0(save_path,"map_min_cost.png"), width=7, height=5)
+ggsave(rec_mui, file=paste0(save_path,"map_rec.png"), width=7, height=5)
+ggsave(max_es, file=paste0(save_path,"map_max_net_es.png"), width=7, height=5)
+# radar
+graph2ppt(radar, file=paste0(save_path,"radar.pptx"), width=7, height=5)
+# barchart
+graph2ppt(bc_sr, file=paste0(save_path,"bc_sr.pptx"), width=7, height=5)
+graph2ppt(bc_food, file=paste0(save_path,"bc_cost.pptx"), width=7, height=5)
+graph2ppt(bc_netben, file=paste0(save_path,"bc_net_ben.pptx"), width=7, height=5)
+graph2ppt(bc_rec, file=paste0(save_path,"bc_rec.pptx"), width=7, height=5)
+# legend
+# radar
+graph2ppt(I, file=paste0(save_path,"legend.pptx"), width=7, height=5)
