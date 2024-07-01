@@ -63,7 +63,7 @@ seer_2km <- seer_2km[seer_2km$new2kid %in% cell_id, 'new2kid']
 # 1.2. Load data from save_output_structure_as_csvs.m 
 # ---------------------------------------------------
 #define file path
-file_path <- paste0(gitpath,"Output/baseline_2031_urbanisation/Offset_outputs/")
+file_path <- paste0(gitpath,"Output/baseline_2031_urbanisation/Offset_outputs/UCL/Both")
 
 #specify the correct file extension eg .xls .csv .xlsx
 path_files <- dir(file_path, pattern = "*sng.csv")
@@ -102,13 +102,31 @@ eng_border <- st_read(paste0(datapath, "Data/SEER_GRID/england_full_clipped.shp"
 # 1.3. Load species rich data for summary 
 # ---------------------------------------
 
-sr_chg <- read.csv(paste0(gitpath, "Output/species_richness_change_2000-2031.csv")) 
+sr_chg <- read.csv(paste0(gitpath, "Output/species_richness_change_2000-2031.csv"))
 
-sr <- read.csv(paste0(gitpath, "Output/species_richness_2000.csv")) %>% 
-  left_join(sr_chg, by = "new2kid") %>% 
-  dplyr::mutate(sr_100_2031 = sr_100 + sr_chg_100) %>% 
-  dplyr::rename(sr_100_2000 = sr_100) %>% 
+# sr_chg <- read.csv(paste0(gitpath, "Output/species_richness_change_2000-2031_ucl.csv")) %>% 
+#   mutate(sr_ucl_chg = sr_prio_chg + sr_poll_chg) %>% 
+#   select(-sr_prio_chg, -sr_poll_chg)
+
+# sr_chg <- read.csv(paste0(gitpath, "Output/species_richness_change_2000-2031_ucl.csv")) %>% 
+#   mutate(sr_ucl_chg = sr_poll_chg) %>% 
+#   select(-sr_poll_chg)
+
+
+sr <- read.csv(paste0(gitpath, "Output/species_richness_2000.csv")) %>%
+  left_join(sr_chg, by = "new2kid") %>%
+  dplyr::mutate(sr_100_2031 = sr_100 + sr_chg_100) %>%
+  dplyr::rename(sr_100_2000 = sr_100) %>%
   dplyr::select(-sr_chg_100)
+
+# sr <- read.csv(paste0(gitpath, "Output/species_richness_2000_ucl.csv")) %>% 
+#   mutate(sr_ucl = sr_poll) %>% 
+#   select(-sr_poll) %>% 
+#   left_join(sr_chg, by = "new2kid") %>% 
+#   dplyr::mutate(sr_ucl_2031 = sr_ucl + sr_ucl_chg) %>% 
+#   dplyr::rename(sr_ucl_2000 = sr_ucl) %>% 
+#   dplyr::select(-sr_ucl_chg)
+
 
 # identify the cells that experience change using the landscover
 lcm_agg_2000 <- read.csv(paste0(datapath,"Data/LCM/LCM_2km/lcm_aggr_2000.csv")) %>% 
@@ -136,18 +154,31 @@ lcm_2000_2031_chg <- left_join(lcm_agg_2000, urban_sprawl_2031, by = "new2kid") 
                 ) %>% 
   dplyr::select(new2kid, any_chg)
 
-# baseline figures: 
-sr %>% 
-  filter(new2kid %in%  seer_2km$new2kid) %>% 
-  left_join(lcm_2000_2031_chg, by = "new2kid") %>% 
-  filter(any_chg == 1) %>% 
-  dplyr::mutate(sr_chg = sr_100_2031 - sr_100_2000, 
+# baseline figures:
+sr %>%
+  filter(new2kid %in%  seer_2km$new2kid) %>%
+  left_join(lcm_2000_2031_chg, by = "new2kid") %>%
+  filter(any_chg == 1) %>%
+  dplyr::mutate(sr_chg = sr_100_2031 - sr_100_2000,
                 sr_perc_chg = ((sr_100_2031 - sr_100_2000)/sr_100_2000),
                 sr_perc_chg = replace_na(sr_perc_chg, 0)) %>%
-  summarise(sr_2000 = mean(sr_100_2000), 
+  summarise(sr_2000 = mean(sr_100_2000),
             sr_2030 = mean(sr_100_2031),
             sr_chg = mean(sr_chg),
             sr_perc_chg = mean(sr_perc_chg))
+
+# sr %>% 
+#   filter(new2kid %in%  seer_2km$new2kid) %>% 
+#   left_join(lcm_2000_2031_chg, by = "new2kid") %>% 
+#   filter(any_chg == 1) %>% 
+#   dplyr::mutate(sr_chg = sr_ucl_2031 - sr_ucl_2000, 
+#                 sr_perc_chg = ((sr_ucl_2031 - sr_ucl_2000)/sr_ucl_2000),
+#                 sr_perc_chg = replace_na(sr_perc_chg, 0)) %>%
+#                 mutate_all(~ ifelse(is.infinite(.), 1000, .)) %>% 
+#   summarise(sr_2000 = mean(sr_ucl_2000), 
+#             sr_2030 = mean(sr_ucl_2031),
+#             sr_chg = mean(sr_chg),
+#             sr_perc_chg = mean(sr_perc_chg))
 
 ## =============================================================================
 ## (2) Summarise benefits
@@ -178,32 +209,50 @@ total_costs <- all_data %>%
 
 total_sp_rich <- all_data %>%
   filter(result_file == "env_outs") %>%
-  left_join(sr, by = "new2kid") %>% 
-  dplyr::mutate(scen_bio = (sr_100_2031 + bio), 
-                sr_chg = (scen_bio - sr_100_2000), 
+  left_join(sr, by = "new2kid") %>%
+  dplyr::mutate(scen_bio = (sr_100_2031 + bio),
+                sr_chg = (scen_bio - sr_100_2000),
                 sr_perc_chg = ((scen_bio - sr_100_2000)/sr_100_2000),
                 sr_perc_chg = replace_na(sr_perc_chg, 0),
                 sr_ha = ifelse(hectares_chg > 0, ((scen_bio - sr_100_2000)/hectares_chg),0),
                 sr_ha = replace_na(sr_ha, 0),
-                sr_perc_chg_ha = ifelse(hectares_chg > 0, (sr_perc_chg/hectares_chg),0), 
-                sr_perc_chg_ha = replace_na(sr_perc_chg_ha, 0)) %>% 
-  dplyr::select(new2kid, scenario, sr_chg, scen_bio, sr_perc_chg, sr_ha, hectares_chg) 
+                sr_perc_chg_ha = ifelse(hectares_chg > 0, (sr_perc_chg/hectares_chg),0),
+                sr_perc_chg_ha = replace_na(sr_perc_chg_ha, 0)) %>%
+  dplyr::select(new2kid, scenario, sr_chg, scen_bio, sr_perc_chg, sr_ha, hectares_chg)
+
+# total_sp_rich <- all_data %>%
+#   filter(result_file == "env_outs") %>%
+#   left_join(sr, by = "new2kid") %>% 
+#   dplyr::mutate(scen_bio = (sr_ucl_2031 + (bio_pollinator_ucl)),
+#                 sr_base = sr_ucl_2000,
+#                 sr_chg = (scen_bio - sr_ucl_2000), 
+#                 sr_perc_chg = ((scen_bio - sr_ucl_2000)/sr_ucl_2000),
+#                 sr_perc_chg = replace_na(sr_perc_chg, 0),
+#                 sr_ha = ifelse(hectares_chg > 0, ((scen_bio - sr_ucl_2000)/hectares_chg),0),
+#                 sr_ha = replace_na(sr_ha, 0),
+#                 sr_perc_chg_ha = ifelse(hectares_chg > 0, (sr_perc_chg/hectares_chg),0), 
+#                 sr_perc_chg_ha = replace_na(sr_perc_chg_ha, 0)) %>% 
+#   mutate_all(~ ifelse(is.infinite(.), 10, .)) %>% 
+#   dplyr::select(new2kid, scenario, sr_base, sr_chg, scen_bio, sr_perc_chg, sr_ha, hectares_chg) 
 
 
 total_sp_rich_sum_tbl <- total_sp_rich %>%
   filter(hectares_chg > 0) %>% 
   group_by(scenario) %>%
-  summarise(sr_chg = mean(sr_chg),
+  summarise(sr_base = mean(sr_base),
+            sr_chg = mean(sr_chg),
             sr_perc_chg = mean(sr_perc_chg),
             sr = mean(scen_bio), 
             sr_ha = mean(sr_ha)) %>% 
   as.data.frame()
 
+# total_sp_rich_sum_tbl$sr_perc_chg = (total_sp_rich_sum_tbl$sr - total_sp_rich_sum_tbl$sr_base) / total_sp_rich_sum_tbl$sr_base
+
 # summarise benefits 
 benefit_table <- full_join(total_benefits, total_costs, by = "scenario") %>% 
   full_join(total_sp_rich_sum_tbl, by = "scenario")
 
-write.csv(benefit_table, paste0(gitpath, "Output/Figures/Scenario_benefits_summary_table_sng.csv"))
+write.csv(benefit_table, paste0(gitpath, "Output/Figures/Scenario_benefits_summary_table_sng_ucl_pollinator.csv"))
 
 
 ## =============================================================================

@@ -27,24 +27,30 @@ gitpath            <- "D:\\Documents\\GitHub\\BNG\\"
 datapath           <- "D:\\Documents\\OneDrive - University of Exeter\\Data\\BNG\\Data\\"
 
 # Input paths
-seer_path          <- paste0(datapath,    "SEER_GRID/")
-base_lcm_path      <- paste0(datapath,    "LCM/LCM_2km/lcm_aggr_2000.csv")
-urban_lcm_path     <- paste0(datapath,    "Urban Sprawl - F.Eigenbrod/urban_sprawl_2031_sprawl.csv")
-bio_input_path     <- paste0(gitpath,     "Output/farm2sng_bio.csv")
-es_input_path      <- paste0(gitpath,     "Output/farm2sng_es.csv")
-net_es_input_path  <- paste0(gitpath,     "Output/farm2sng_netES.csv")
-rec_input_path     <- paste0(gitpath,     "Output/farm2sng_rec.csv")
-cost_input_path    <- paste0(gitpath,     "Output/farm2sng_Oc.csv")
-census_path        <- paste0(datapath,    "SEER_SOCIO_ECON/SEER_2k_socioecon_eng.csv")
+seer_path              <- paste0(datapath,    "SEER_GRID/")
+base_lcm_path          <- paste0(datapath,    "LCM/LCM_2km/lcm_aggr_2000.csv")
+urban_lcm_path         <- paste0(datapath,    "Urban Sprawl - F.Eigenbrod/urban_sprawl_2031_sprawl.csv")
+bio_jncc_input_path    <- paste0(gitpath,     "Output/farm2sng_bio.csv")
+bio_pollinator_path    <- paste0(gitpath,     "Output/farm2sng_pollinator_ucl.csv")
+bio_priority_path      <- paste0(gitpath,     "Output/farm2sng_priority_ucl.csv")
+bio_poll_prio_path     <- paste0(gitpath,     "Output/farm2sng_poll_prio_ucl.csv")
+es_input_path          <- paste0(gitpath,     "Output/farm2sng_es.csv")
+net_es_input_path      <- paste0(gitpath,     "Output/farm2sng_netES.csv")
+rec_input_path         <- paste0(gitpath,     "Output/farm2sng_rec.csv")
+cost_input_path        <- paste0(gitpath,     "Output/farm2sng_Oc.csv")
+census_path            <- paste0(datapath,    "SEER_SOCIO_ECON/SEER_2k_socioecon_eng.csv")
 
 # Output paths
-output_path        <- paste0(gitpath,     "Output/")
-local_output_path  <- paste0(output_path, "local_bio_offset_sng.csv")
-bio_output_path    <- paste0(output_path, "max_bio_offset_sng.csv")
-es_output_path     <- paste0(output_path, "max_es_offset_sng.csv")
-net_es_output_path <- paste0(output_path, "max_netES_offset_sng.csv")
-rec_output_path    <- paste0(output_path, "max_equity_offset_sng.csv")
-cost_output_path   <- paste0(output_path, "min_cost_offset_sng.csv")
+output_path             <- paste0(gitpath,     "Output/")
+local_output_path       <- paste0(output_path, "local_bio_offset_sng.csv")
+bio_output_path         <- paste0(output_path, "max_bio_offset_sng.csv")
+pollinator_output_path  <- paste0(output_path, "max_pollinator_offset_sng.csv")
+priority_output_path    <- paste0(output_path, "max_priority_offset_sng.csv")
+poll_prio_output_path   <- paste0(output_path, "max_poll_prio_offset_sng.csv")
+es_output_path          <- paste0(output_path, "max_es_offset_sng.csv")
+net_es_output_path      <- paste0(output_path, "max_netES_offset_sng.csv")
+rec_output_path         <- paste0(output_path, "max_equity_offset_sng.csv")
+cost_output_path        <- paste0(output_path, "min_cost_offset_sng.csv")
 
 # load required functions
 source(paste0(gitpath, '/R_scripts/Functions/load_bng_data.R'))
@@ -81,9 +87,22 @@ local_offset <- calc_local_offset(city_spread, local_output_path, 'sng', saveond
 
 ## 2.2. Offset based on max biodiversity improvements
 ## --------------------------------------------------
-max_bio <- read.csv(bio_input_path)[, c('new2kid','sr_chg_ha')] %>%
+max_bio <- read.csv(bio_jncc_input_path)[, c('new2kid','sr_chg_ha')] %>%
   rename(target = sr_chg_ha)
 bio_offset <- maximise_target(city_spread, max_bio, 'sng', decreasing=TRUE, bio_output_path, saveondisk=TRUE)
+
+max_pollinators <- read.csv(bio_pollinator_path)[, c('new2kid','sr_chg_ha')] %>%
+  rename(target = sr_chg_ha)
+pollinator_offset <- maximise_target(city_spread, max_pollinators, 'sng', decreasing=TRUE, pollinator_output_path, saveondisk=TRUE)
+
+max_priority <- read.csv(bio_priority_path)[, c('new2kid','sr_chg_ha')] %>%
+  rename(target = sr_chg_ha)
+priority_offset <- maximise_target(city_spread, max_priority, 'sng', decreasing=TRUE, priority_output_path, saveondisk=TRUE)
+
+max_poll_prio <- read.csv(bio_poll_prio_path)[, c('new2kid','sr_chg_ha')] %>%
+  rename(target = sr_chg_ha)
+poll_prio_offset <- maximise_target(city_spread, max_poll_prio, 'sng', decreasing=TRUE, poll_prio_output_path, saveondisk=TRUE)
+
 
 ## 2.3. Offset based on max Ecosystem Services
 ## -------------------------------------------

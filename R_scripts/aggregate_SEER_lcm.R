@@ -23,9 +23,9 @@ library(dplyr)
 
 ## (1) INPUT SPECIFICATION
 ## =======================
-lcm_year <- 2020
-lcm_folder <- 'D:/Documents/GitHub/BNG/Data/LCM/LCM_2km/'
-SEER_folder <- 'D:/Documents/GitHub/BNG/Data/SEER_GRID/'
+lcm_year <- 1990
+lcm_folder <- 'D:/Documents/Data/BioMetrics/LCM/LCM_2km/'
+SEER_folder <- 'D:/Documents/Data/BioMetrics/SEER_GRID/'
 
 ## (2) LOAD THE DATA
 ## =================
@@ -60,14 +60,14 @@ if(lcm_year == 2000){
   lcm_aggr$wood_ha <- as.numeric(rowSums(lcm_2km[, which(colnames(lcm_2km) %in% c(1:2)), drop=TRUE]) * 0.0625)
   lcm_aggr$urban_ha <- as.numeric(rowSums(lcm_2km[, which(colnames(lcm_2km) %in% c(22:23)), drop=TRUE]) * 0.0625)
   lcm_aggr$water_ha <- as.numeric(rowSums(lcm_2km[, which(colnames(lcm_2km) %in% c(15:21)), drop=TRUE]) * 0.0625)
-} else if (lcm_year == 2015 | lcm_year == 2019 | lcm_year == 2020){
+} else if (lcm_year == 1990 | lcm_year == 2015 | lcm_year == 2019 | lcm_year == 2020){
   lcm_aggr$farm_ha <- as.numeric(rowSums(lcm_2km[,which(colnames(lcm_2km) %in% c(3,4)), drop=TRUE]) * 0.0625)
   lcm_aggr$sng_ha <- as.numeric(rowSums(lcm_2km[,which(colnames(lcm_2km) %in% c(5:12)), drop=TRUE]) * 0.0625)
   lcm_aggr$wood_ha <- as.numeric(rowSums(lcm_2km[, which(colnames(lcm_2km) %in% c(1:2)), drop=TRUE]) * 0.0625)
   lcm_aggr$urban_ha <- as.numeric(rowSums(lcm_2km[, which(colnames(lcm_2km) %in% c(20,21)), drop=TRUE]) * 0.0625)
   lcm_aggr$water_ha <- as.numeric(rowSums(lcm_2km[, which(colnames(lcm_2km) %in% c(13:19)), drop=TRUE]) * 0.0625)
 } else {
-  stop("Available LCM data only for years 2000, 2007, 2015, 2019, 2020")
+  stop("Available LCM data only for years 1990, 2000, 2007, 2015, 2019, 2020")
 }
 
 # assume water to be all empty cells

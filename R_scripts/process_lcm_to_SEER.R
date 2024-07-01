@@ -33,9 +33,9 @@ options(future.globals.maxSize= 128849018880)
 
 ## (1) INPUT SPECIFICATION
 ## =======================
-lcm_year <- 2021
-lcm_folder <- paste('D:/Documents/Data/NERC--Agile-Sprint/Data/LCM/LCM_', lcm_year, "/", sep =  "")
-SEER_folder <- 'D:/Documents/Data/NERC--Agile-Sprint/Data/SEER_GRID/'
+lcm_year <- 1990
+lcm_folder <- paste('D:/Documents/Data/BNG/Data/LCM/LCM_', lcm_year, "/", sep =  "")
+SEER_folder <- 'D:/Documents/Data/BNG/Data/SEER_GRID/'
 
 ## (2) LOAD THE DATA
 ## =================
@@ -47,7 +47,9 @@ seer_2km <- seer_2km[, "new2kid"]
 
 ## 2.3) LCM2000 to SEER 2km
 ## ------------------------
-if (lcm_year == 2000){
+if (lcm_year == 1990){
+  lcm_filename <- "gb1990lcm25m.tif"
+} else if (lcm_year == 2000){
   lcm_filename <- "gb25_r1.tif"
 } else if (lcm_year == 2007){
   lcm_filename <- "lcm2007gb25m.tif"
@@ -60,7 +62,7 @@ if (lcm_year == 2000){
 } else if (lcm_year == 2021){
   lcm_filename <- "lcm-2021-25m/gblcm25m2021.tif"
 } else {
-  stop("Available LCM data only for years 2000, 2007, 2015, 2019, 2020, 2021")
+  stop("Available LCM data only for years 1990, 2000, 2007, 2015, 2019, 2020, 2021")
 }
 
 # Load LCM
@@ -70,7 +72,9 @@ lcm <- raster(paste(lcm_folder, lcm_filename, sep=""))
 lcm_crop <- crop(lcm, seer_2km)
 
 start_time <- Sys.time()
-if (lcm_year == 2000){
+if (lcm_year == 1990){
+  lcm_crop[lcm_crop < 1] <- NA # ~15 minutes to run!
+} else if (lcm_year == 2000){
   lcm_crop[lcm_crop < 11] <- NA # ~15 minutes to run!
 } else if (lcm_year == 2007){
   lcm_crop[lcm_crop < 1] <- NA # ~15 minutes to run!
@@ -83,7 +87,7 @@ if (lcm_year == 2000){
 } else if (lcm_year == 2021){
   lcm_crop[lcm_crop < 1] <- NA # ~15 minutes to run!
 } else {
-  stop("Available LCM data only for years 2000, 2007, 2015, 2019, 2020, 2021")
+  stop("Available LCM data only for years 1990, 2000, 2007, 2015, 2019, 2020, 2021")
 }
 end_time <- Sys.time()
 end_time - start_time
@@ -96,7 +100,10 @@ end_time <- Sys.time()
 end_time - start_time
 
 # Initialise a vector file containing lcm data aggregated at 2km resolution
-if(lcm_year == 2000){
+if (lcm_year == 1990){
+  lcm_2km <- cbind(seer_2km, as.data.frame(matrix(0, nrow = nrow(seer_2km), ncol = 21)))
+  colnames(lcm_2km) <- c('new2kid', c(1:21), 'geometry')
+} else if(lcm_year == 2000){
   lcm_2km <- cbind(seer_2km, as.data.frame(matrix(0, nrow = nrow(seer_2km), ncol = 26)))
   colnames(lcm_2km) <- c('new2kid', 11, 21, 41, 42, 43, 51, 52, 61, 71, 81, 91,
                          101, 102, 111, 121, 131, 151, 161, 171, 172, 181, 191, 
@@ -117,7 +124,7 @@ if(lcm_year == 2000){
   lcm_2km <- cbind(seer_2km, as.data.frame(matrix(0, nrow = nrow(seer_2km), ncol = 21)))
   colnames(lcm_2km) <- c('new2kid', c(1:21), 'geometry')
 } else {
-  stop("Available LCM data only for years 2000, 2007, 2015, 2019, 2020, 2021")
+  stop("Available LCM data only for years 1990, 2000, 2007, 2015, 2019, 2020, 2021")
 }
 
 # Assign 25m rasters to 2km grid (AAA: 2.8 days!!!!!).I attempted to parallelise
@@ -153,5 +160,5 @@ end_time <- Sys.time()
 end_time - start_time
 
 # save on disk
-filename <- paste('D:/Documents/Data/NERC--Agile-Sprint/Data/LCM/LCM_2km/lcm_all_classes_', lcm_year, '.csv', sep="")
+filename <- paste('D:/Documents/Data/BNG/Data/LCM/LCM_2km/lcm_all_classes_', lcm_year, '.csv', sep="")
 st_write(lcm_2km, filename)
