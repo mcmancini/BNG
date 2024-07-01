@@ -92,10 +92,10 @@ parameters.options = {'arable2sng', 'arable2wood', 'arable2urban', 'arable2mixed
 % ----------------------------------------
 model_flags.run_ag_toplevel   = true;
 model_flags.run_ghg           = true;
-model_flags.run_forestry      = true;
+model_flags.run_forestry      = false;
 model_flags.run_biodiversity  = true;
-model_flags.run_hydrology     = true;
-model_flags.run_recreation    = true;
+model_flags.run_hydrology     = false;
+model_flags.run_recreation    = false;
 
 
 
@@ -109,27 +109,28 @@ model_flags.run_recreation    = true;
 %      table, we also need to specify which CEH LCM it originates from in
 %      order to correclty calculate baselines for each of the NEV modules.
 % ------------------------------------------------------------------------
-base_ceh_lcm = '2000';
-landuse_data_path = 'D:\Documents\Data\BNG\Data\Urban Sprawl - F.Eigenbrod\';
-baseline_lu = readtable(strcat(landuse_data_path, 'urban_sprawl_2031_sprawl.csv'));
+base_ceh_lcm = '2020';
+% landuse_data_path = 'D:\Documents\Data\BNG\Data\Urban Sprawl - F.Eigenbrod\';
+% baseline_lu = readtable(strcat(landuse_data_path, 'urban_sprawl_2031_sprawl.csv'));
+landuse_data_path = 'D:\Documents\Data\BNG\Data\LCM\LCM_2km\';
+baseline_lu = readtable(strcat(landuse_data_path, 'lcm_aggr_2020.csv'));
 parameters.base_ceh_lcm = base_ceh_lcm;
 
 % 2.2. Load scenario land use
 % ---------------------------
-% scenario_lu = baseline_lu;
-% scenario_lu.sng_ha = scenario_lu.sng_ha + scenario_lu.farm_ha;
-% scenario_lu.wood_ha = scenario_lu.wood_ha + 0.5 .* scenario_lu.farm_ha;
-% scenario_lu.farm_ha = zeros(height(scenario_lu), 1);
 scenario_lu = baseline_lu;
-landuse_data_path = 'D:\Documents\GitHub\BNG\Output\';
-scenario_lu_eng = readtable(strcat(landuse_data_path, 'min_cost_offset_sng.csv'));
-scenario_lu_eng.offset_area_ha = [];
-[~, idx] = ismember(scenario_lu.Properties.VariableNames, scenario_lu_eng.Properties.VariableNames); 
-scenario_lu_eng = scenario_lu_eng(:,idx);
+scenario_lu.wood_ha = scenario_lu.wood_ha + scenario_lu.farm_ha;
+scenario_lu.farm_ha = zeros(height(scenario_lu), 1);
+% scenario_lu = baseline_lu;
+% landuse_data_path = 'D:\Documents\GitHub\BNG\Output\';
+% scenario_lu_eng = readtable(strcat(landuse_data_path, 'min_cost_offset_sng.csv'));
+% scenario_lu_eng.offset_area_ha = [];
+% [~, idx] = ismember(scenario_lu.Properties.VariableNames, scenario_lu_eng.Properties.VariableNames); 
+% scenario_lu_eng = scenario_lu_eng(:,idx);
 
-[~, idx] = intersect(scenario_lu.new2kid, scenario_lu_eng.new2kid);
-scenario_lu(idx,:) = scenario_lu_eng;
-baseline_lu_eng = baseline_lu(idx, :);
+% [~, idx] = intersect(scenario_lu.new2kid, scenario_lu_eng.new2kid);
+% scenario_lu(idx,:) = scenario_lu_eng;
+% baseline_lu_eng = baseline_lu(idx, :);
                                     
 %% (3) RUN THE MODELS
 %  ==================
@@ -151,68 +152,29 @@ hectares_chg = sum(lu_chg, 2) ./ 2;
 
 %% (4) SAVE THE OUTPUT
 %  ===================
-min_cost_offset_sng = struct('benefits', benefits, ...
-                                    'costs', costs, ...
-                                    'env_outs', env_outs, ...
-                                    'es_outs', es_outs, ...
-                                    'hectares_chg', hectares_chg, ...
-                                    'new2kid', baseline_lu.new2kid);
-                               
-save('Output/min_cost_offset_sng', 'min_cost_offset_sng')
+% min_cost_offset_sng = struct('benefits', benefits, ...
+%                                     'costs', costs, ...
+%                                     'env_outs', env_outs, ...
+%                                     'es_outs', es_outs, ...
+%                                     'hectares_chg', hectares_chg, ...
+%                                     'new2kid', baseline_lu.new2kid);
+%                                
+% save('Output/min_cost_offset_sng', 'min_cost_offset_sng')
 
 
-% %% (5) SCENARIO SPECIFIC OUTPUT
-% %  ============================
-% %  CHANGE THIS BASED ON NEEDS
-% 
-% % 5.1. Biodiverity: used for the identification of offset locations that
-% %      maximise biodiversity improvements
-% % -----------------------------------------------------------------------
-% biodiversity_chg = array2table([baseline_lu.new2kid, ...
-%                                env_outs.bio, ...
-%                                env_outs.bio ./ hectares_chg]);
-% biodiversity_chg = fillmissing(biodiversity_chg, 'constant', 0);
-% biodiversity_chg.Properties.VariableNames = {'new2kid', 'sr_chg_perc', 'sr_chg_ha'};
-% writetable(biodiversity_chg, 'Output/farm2sng_bio.csv');
-% 
-% % 5.2. Ecosystem services: used for the identification of offset locations 
-% %      that maximise ES improvements. ES: recreation and cost (net ES)
-% % -----------------------------------------------------------------------
-% tot_es = benefits{:,'rec'}; 
-% es_chg = array2table([baseline_lu.new2kid, ...
-%                       tot_es, ...
-%                       tot_es ./ hectares_chg]);
-% es_chg = fillmissing(es_chg, 'constant', 0);
-% es_chg.Properties.VariableNames = {'new2kid', 'tot_es', 'tot_es_ha'};
-% writetable(es_chg, 'Output/farm2sng_es.csv');
-% 
-% % 5.3. Recreation, for equity weighting
-% % ---------------------------------------------
-% tot_es = [array2table(baseline_lu.new2kid), es_outs(:,2)]; 
-% tot_es.rec_ha = tot_es.rec ./ hectares_chg;
-% tot_es = fillmissing(tot_es, 'constant', 0);
-% tot_es.Properties.VariableNames(1) = {'new2kid'};
-% writetable(tot_es, 'Output/farm2sng_rec.csv');
-% 
-% % 5.4. Costs: used for the identification of offset locations that
-% %      minimise the opportunity cost of agriculture
-% % ------------------------------------------------------------------------
-% cost_table = array2table([baseline_lu.new2kid, ...
-%                           costs.farm, ...
-%                           costs.farm ./ hectares_chg]);
-% cost_table = fillmissing(cost_table, 'constant', 0);
-% cost_table.Properties.VariableNames = {'new2kid', 'farm_oc', 'farm_oc_ha'};
-% writetable(cost_table, 'Output/farm2sng_OC.csv');
-% 
-% % 5.5. Net ES: used for the identification of offset locations that
-% %      maximise net ecosystem services (which in this latest iteration are
-% %      the value of recreation minus cost)
-% % ------------------------------------------------------------------------
-% net_es = benefits.rec - costs.farm;
-% net_es_ha = net_es ./ hectares_chg;
-% net_es_table = array2table([baseline_lu.new2kid, ...
-%                       net_es, ...
-%                       net_es_ha]);
-% net_es_table = fillmissing(net_es_table, 'constant', 0);
-% net_es_table.Properties.VariableNames = {'new2kid', 'net_es', 'net_es_ha'};
-% writetable(net_es_table, 'Output/farm2sng_netES.csv');                  
+%% (5) SCENARIO SPECIFIC OUTPUT
+%  ============================
+%  CHANGE THIS BASED ON NEEDS
+
+% 5.1. Biodiverity: used for the identification of offset locations that
+%      maximise biodiversity improvements
+% -----------------------------------------------------------------------
+biodiversity_chg = array2table([baseline_lu.new2kid, ...
+                               env_outs.bio_jncc, ...
+                               env_outs.bio_jncc ./ hectares_chg, ...
+                               costs.farm, ...
+                               costs.farm ./ hectares_chg, ...
+                               baseline_lu.farm_ha]);
+biodiversity_chg = fillmissing(biodiversity_chg, 'constant', 0);
+biodiversity_chg.Properties.VariableNames = {'new2kid', 'sr_chg', 'sr_chg_ha', 'farm_oc', 'farm_oc_ha', 'ha'};
+writetable(biodiversity_chg, 'farm2wood.csv');
