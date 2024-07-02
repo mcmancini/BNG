@@ -119,7 +119,7 @@ parameters.base_ceh_lcm = base_ceh_lcm;
 % 2.2. Load scenario land use
 % ---------------------------
 scenario_lu = baseline_lu;
-scenario_lu.wood_ha = scenario_lu.wood_ha + scenario_lu.farm_ha;
+scenario_lu.sng_ha = scenario_lu.sng_ha + scenario_lu.farm_ha;
 scenario_lu.farm_ha = zeros(height(scenario_lu), 1);
 % scenario_lu = baseline_lu;
 % landuse_data_path = 'D:\Documents\GitHub\BNG\Output\';
@@ -186,4 +186,4 @@ biodiversity_chg.Properties.VariableNames = {'new2kid', ...
                                              'food_chg', ...
                                              'food_chg_ha', ...
                                              'ha'};
-writetable(biodiversity_chg, 'farm2wood.csv');
+writetable(biodiversity_chg, 'farm2sng.csv');
